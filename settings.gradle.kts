@@ -1,4 +1,4 @@
-rootProject.name = "UIwallet"
+rootProject.name = "finalyearproject"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
@@ -29,3 +29,5 @@ dependencyResolutionManagement {
 }
 
 include(":composeApp")
+include(":server")
+include(":shared")

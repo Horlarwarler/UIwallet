@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <string name="app_name">UI Wallet</string>
+    <string name="right_reserved">2025. All rights reserved</string>
+    <string name="onboard_title_one">Save Bit Toward Fee</string>
+    <string name="onboard_description_one">Save toward paying your school fees bit by bit, as low as 1000</string>
+    <string name="onboard_title_two">Save Bit Toward Fee</string>
+    <string name="onboard_description_two">Save toward paying your school fees bit by bit, as low as 1000</string>
+    <string name="onboard_title_three">Manage Your Finance</string>
+    <string name="onboard_description_three">Save toward paying your school fees bit by bit, as low as 1000</string>
+    <string name="get_started">Get Started</string>
+    <string name="login">Login</string>
+    <string name="email_id">Email Id</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="forgot_password_description">Don’t worry! It happens. Please enter the email address associated with your account</string>
+    <string name="email_not_valid"> Invalid email</string>
+    <string name="password_not_valid"> Password weak!!!. Must contain, A capital letter, number and special character and minimum of 8 letter word</string>
+    <string name="new_to_ui">New to UI Wallet?</string>
+    <string name="register">Register</string>
+    <string name="signup">Sign Up</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="middle_name">Middle Name</string>
+    <string name="matric">Matric No</string>
+    <string name="phone_number">Phone number</string>
+    <string name="continue">Continue</string>
+    <string name="joined_before">Joined Us Before?</string>
+    <string name="gender">Gender</string>
+    <string name="request_otp">Request Otp</string>
+    <string name="enter_otp">Enter Otp</string>
+    <string name="otp_description">We have sent the code verification to your email</string>
+    <string name="submit">Submit</string>
+    <string name="confirm_new_password">Confirm New Password</string>
+    <string name="new_password">New Password</string>
+    <string name="chose_new_password">Please choose a new password, you can’t use your old password.</string>
+
+</resources>
