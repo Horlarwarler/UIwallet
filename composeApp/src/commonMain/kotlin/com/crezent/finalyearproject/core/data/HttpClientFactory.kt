@@ -39,7 +39,7 @@ object HttpClientFactory {
 
             defaultRequest {
                 contentType(ContentType.Application.Json)
-                url(ApiRoute.SAMSUNG_BASE_URL)
+                url(ApiRoute.BASE_URL)
             }
         }
     }

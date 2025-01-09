@@ -2,7 +2,7 @@ package com.crezent.finalyearproject.core.data.util
 
 interface Base64Util  {
 
-    fun ByteArray.encodeToString()
+    fun encodeToString(byteArray: ByteArray) :String
 
-    fun String.toByteArray()
+    fun decodeToByteArray(enCodedString: String) :ByteArray
 }

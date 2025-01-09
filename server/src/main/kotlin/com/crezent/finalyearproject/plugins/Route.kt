@@ -18,9 +18,9 @@ fun Application.configureRoute(
 //    val serverPrivateKey = System.getenv("server_private_key")
     //val serverPublicKey = System.getenv("server_public_key")
 
-    val keyPair = generateKeyPair()
-    val serverPublicKey = exportPublicKeyToBase64(keyPair)
-    val serverPrivateKey = exportPrivateKeyToBase64(keyPair)
+//    val keyPair = generateKeyPair()
+//    val serverPublicKey = exportPublicKeyToBase64(keyPair)
+//    val serverPrivateKey = exportPrivateKeyToBase64(keyPair)
 
     val ecPublicKey = System.getenv("ec_public_key")
     val ecPrivateKey = System.getenv("ec_private_key")
@@ -29,8 +29,7 @@ fun Application.configureRoute(
     val rsaPrivateKey = System.getenv("rsa_private_key")
 
 
-
-    println("Server Public key : $serverPublicKey")
+    // println("Server Public key : $serverPublicKey")
     val encryptService = ECBEncryptService()
 
     val uiWalletRepository by inject<UIWalletRepository>()
@@ -51,28 +50,30 @@ fun Application.configureRoute(
 
         )
         signUp(
-            serverPrivateKeyString = serverPrivateKey,
+
             signingService = SigningService,
             encryptService = encryptService,
             uiWalletRepository = uiWalletRepository,
-            hashingService = hashingService
+            hashingService = hashingService,
+            rsaPrivateKeyString = rsaPrivateKey
         )
         getUser(
-            serverPrivateKeyString = serverPrivateKey,
+            serverPrivateKeyString = "serverPrivateKey",
             signingService = SigningService,
             encryptService = encryptService,
             uiWalletRepository = uiWalletRepository,
-            serverPublicKeyString = serverPublicKey
+            serverPublicKeyString = "serverPublicKey"
         )
         verifyEmail(
-            serverPrivateKeyString = serverPrivateKey,
-            signingService = SigningService,
-            encryptService = encryptService,
+
             uiWalletRepository = uiWalletRepository,
-            serverPublicKeyString = serverPublicKey
         )
         getApiKey(
-            serverPublicKey = serverPublicKey
+            rsaPublicKey = rsaPublicKey,
+            ecPublicKey = ecPublicKey
+        )
+        sendOtpToken(
+            uiWalletRepository = uiWalletRepository
         )
     }
 }

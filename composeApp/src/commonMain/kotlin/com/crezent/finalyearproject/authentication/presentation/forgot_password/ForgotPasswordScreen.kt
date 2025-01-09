@@ -95,7 +95,7 @@ fun ForgotPasswordScreenRoot(
             isPlaying = true,
             onAnimationCompleted = {
                 showSentMessageAnimation = false
-                screenNavigation.navigateToOtpScreen(state.email)
+                screenNavigation.navigateToOtpScreen(state.email, "")
             },
             animationJson = animationJson!!,
             iterations = 2,

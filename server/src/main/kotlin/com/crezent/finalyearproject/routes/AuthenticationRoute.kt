@@ -26,8 +26,8 @@ fun Route.singIn(
     encryptService: EncryptService,
     uiWalletRepository: UIWalletRepository,
     hashingService: HashingService,
-    serverEcPublicKey : String,
-    serverRsaPublicKey :String
+    serverEcPublicKey: String,
+    serverRsaPublicKey: String
 
 ) {
     post("login") {
@@ -55,8 +55,9 @@ fun Route.singIn(
         if (userResult is Result.Error) {
 
             call.respond(
-                HttpStatusCode.NotFound, ServerResponse(message = userResult.error.toErrorMessage(), data = null)
+                HttpStatusCode.NotFound, message = userResult.error.toErrorMessage()
             )
+
             return@post
         }
 
@@ -72,7 +73,7 @@ fun Route.singIn(
         )
 
         if (!passwordMatch) {
-            call.respond(HttpStatusCode.NotFound, ServerResponse(message = "Email or password not valid", data = null))
+            call.respond(HttpStatusCode.NotFound, message = "Invalid Username or Password")
             return@post
         }
 
@@ -80,24 +81,25 @@ fun Route.singIn(
 
 
         val encryptUser = encryptService.encryptData(
-            publicKeyString = rsaPublicKey,
+            clientRsapublicKey = rsaPublicKey,
             value = userString
         ) ?: run {
-            call.respond(HttpStatusCode.Forbidden, "Unable to get user data, please check the device ")
+            call.respond(HttpStatusCode.Forbidden, "Unable to get user data, please check the device")
             return@post
         }
 
         val signature = signingService.signData(
-            data = encryptUser,
+            data = encryptUser.aesEncryptedString,
             privateKeyString = ecPrivateKeyString
         )
 
         //
         val encryptedModel = EncryptedModel(
             signature = signature,
-            encryptedData = encryptUser,
+            encryptedData = encryptUser.aesEncryptedString,
             ecKey = serverEcPublicKey, // server  eckey needed ,
-            rsaKey = serverRsaPublicKey // TODO
+            rsaKey = serverRsaPublicKey,
+            aesKey = encryptUser.rsaEncryptedKey
         )
         val serverResponse = ServerResponse(
             data = encryptedModel,
@@ -112,44 +114,48 @@ fun Route.singIn(
 
 
 fun Route.getApiKey(
-    serverPublicKey: String
+    rsaPublicKey: String,
+    ecPublicKey: String
 ) {
-    println("Server Public key $serverPublicKey")
+    println("Server RSA Public key $rsaPublicKey EC  $ecPublicKey")
     get("public-key") {
-        call.respond(HttpStatusCode.OK, ServerResponse(data = serverPublicKey))
+        call.respond(
+            HttpStatusCode.OK,
+            ServerResponse(data = PublicKey(publicEcKey = ecPublicKey, publicRsaKey = rsaPublicKey))
+        )
     }
 }
 
 fun Route.signUp(
-    serverPrivateKeyString: String, // Use for decrypting value
+    rsaPrivateKeyString: String, // Use for decrypting value
     signingService: SigningService,
     encryptService: EncryptService,
     uiWalletRepository: UIWalletRepository,
-    hashingService: HashingService
+    hashingService: HashingService,
 
-) {
+
+    ) {
     post("sign-up") {
 
-//        val decryptVerifiedMessage = call.decryptVerifiedMessage<SignUpDetails>(
-//            serverPrivateKeyString = serverPrivateKeyString,
-//            signingService = signingService,
-//            encryptService = encryptService
-//        )
-//
-//        if (decryptVerifiedMessage !is Result.Success) {
-//
-//            val errorMessage = (decryptVerifiedMessage as Result.Error).error.toErrorMessage()
-//            call.respond(HttpStatusCode.NotAcceptable, errorMessage)
-//            return@post
-//        }
-//        val signUpDetails = decryptVerifiedMessage.data
+        val decryptVerifiedMessage = call.decryptVerifiedMessage<SignUpDetails>(
+            rsaPrivateKeyString = rsaPrivateKeyString,
+            signingService = signingService,
+            encryptService = encryptService
+        )
+        if (decryptVerifiedMessage !is Result.Success) {
 
-        val signUpDetails = call.receive<SignUpDetails>()
+            val errorMessage = (decryptVerifiedMessage as Result.Error).error.toErrorMessage()
+            call.respond(HttpStatusCode.NotAcceptable, errorMessage)
+            return@post
+        }
+        val signUpDetails = decryptVerifiedMessage.data.data
+
+//        val signUpDetails = call.receive<SignUpDetails>()
 
 
         val isEmailValid = ValidationUtils.isValidEmail(signUpDetails.emailAddress)
         if (!isEmailValid) {
-            call.respond(HttpStatusCode.NotAcceptable, "Email Not Valid".toServerResponse())
+            call.respond(HttpStatusCode.NotAcceptable, "Email Address Not valid")
             return@post
         }
 
@@ -176,8 +182,10 @@ fun Route.signUp(
         )
 
         if (userFromDatabaseResult is Result.Success) {
-            println("User With this matric already Exist")
-            call.respond(HttpStatusCode.NotAcceptable, ServerResponse(message = "User Already Exist", data = null))
+            call.respond(
+                HttpStatusCode.NotAcceptable,
+                message = "User With this email, matric number or phone number already exist"
+            )
             return@post
         }
 
@@ -186,7 +194,7 @@ fun Route.signUp(
         val resultError = (userFromDatabaseResult as Result.Error).error
 
         if (resultError !is DatabaseError.ItemNotFound) {
-            call.respond(HttpStatusCode.NotModified, "Error Creating Account".toServerResponse())
+            call.respond(HttpStatusCode.NotModified, "Error Creating Account")
             return@post
         }
 
@@ -197,7 +205,7 @@ fun Route.signUp(
             token = token
         )
         if (mailSendResult is Result.Error) {
-            call.respond(HttpStatusCode.NotAcceptable, "Unable to send mail to your email address".toServerResponse())
+            call.respond(HttpStatusCode.NotAcceptable, "Unable to send mail to your email address")
             return@post
             //
         }
@@ -231,7 +239,7 @@ fun Route.signUp(
 
 
         if (newUserResult is Result.Error) {
-            call.respond(HttpStatusCode.NotImplemented, "Error Creating Account".toServerResponse())
+            call.respond(HttpStatusCode.NotImplemented, "Error Creating Account")
             return@post
         }
 
@@ -254,7 +262,8 @@ fun Route.signUp(
         println("Finish Adding Token")
 
 
-        call.respond(HttpStatusCode.OK, "Please verify your email".toServerResponse())
+
+        call.respond(HttpStatusCode.OK, ServerResponse(data = "Please verify your email"))
 
 
     }
@@ -313,7 +322,7 @@ fun Route.getUser(
 
 
         val encryptUser = encryptService.encryptData(
-            publicKeyString = publicKey,
+            clientRsapublicKey = publicKey,
             value = userString
         ) ?: run {
             call.respond(HttpStatusCode.Forbidden, "Unable to get user data, please check the device ")
@@ -321,15 +330,16 @@ fun Route.getUser(
         }
 
         val signature = signingService.signData(
-            data = encryptUser,
+            data = encryptUser.aesEncryptedString,
             privateKeyString = serverPrivateKeyString
         )
 
         val encryptedModel = EncryptedModel(
             signature = signature,
-            encryptedData = encryptUser,
+            encryptedData = encryptUser.aesEncryptedString,
             ecKey = serverPublicKeyString,
-            rsaKey = ""
+            rsaKey = "",
+            aesKey = encryptUser.rsaEncryptedKey
 
         )
         val serverResponse = ServerResponse(
@@ -344,55 +354,41 @@ fun Route.getUser(
 
 
 fun Route.verifyEmail(
-    serverPrivateKeyString: String, // Use for decrypting value
-    serverPublicKeyString: String, // Use for decrypting value
-    signingService: SigningService,
-    encryptService: EncryptService,
+
     uiWalletRepository: UIWalletRepository,
 ) {
     put("verify-mail") {
 
-//        val decryptVerifiedMessage = call.decryptVerifiedMessage<TokenVerification>(
-//            serverPrivateKeyString = serverPrivateKeyString,
-//            signingService = signingService,
-//            encryptService = encryptService,
-//        )
-//
-//        if (decryptVerifiedMessage is Result.Error) {
-//            val errorMessage = decryptVerifiedMessage.error.toErrorMessage()
-//            call.respond(HttpStatusCode.NotAcceptable, errorMessage)
-//            return@put
-//        }
-//
-//        val publicKey = call.request.header("public_key") ?: run {
-//            call.respond(HttpStatusCode.Forbidden, "Public key needed, please check the device ")
-//            return@put
-//        }
-//        val tokenVerification = (decryptVerifiedMessage as Result.Success).data
-
         val tokenVerification = call.receive<TokenVerification>()
 
+        val token = call.queryParameters["token"]
+        val userId = call.queryParameters["user_id"]
+        if (token == null || userId == null) {
+            call.respond(HttpStatusCode.NotAcceptable, "User ID and token is required")
+            return@put
+        }
+
         val tokenEntityResult = uiWalletRepository.getTokenById(
-            token = tokenVerification.token,
-            userId = tokenVerification.userId
+            token = token,
+            userId = userId
         )
 
         if (tokenEntityResult is Result.Error) {
             val errorMessage = tokenEntityResult.error.toErrorMessage()
-            call.respond(HttpStatusCode.NotFound, errorMessage.toServerResponse())
+            call.respond(HttpStatusCode.NotFound, errorMessage)
             return@put
         }
 
-        val token = (tokenEntityResult as Result.Success).data
-        val tokenExpired = token.expiresAt < System.currentTimeMillis()
+        val tokenEntity = (tokenEntityResult as Result.Success).data
+        val tokenExpired = tokenEntity.expiresAt < System.currentTimeMillis()
         if (tokenExpired) {
-            call.respond(HttpStatusCode.BadRequest, ServerResponse(data = "Token Expired"))
+            call.respond(HttpStatusCode.NotAcceptable, ServerResponse(data = "Token Expired, Please request a new now"))
             return@put
         }
 
 
         val tokenRemoveResult = uiWalletRepository.removeToken(
-            objectId = token.id
+            objectId = tokenEntity.id
         )
 
         if (tokenRemoveResult is Result.Error) {
@@ -445,6 +441,62 @@ fun Route.verifyEmail(
 //
 //        call.respond(HttpStatusCode.OK, serverResponse)
 
+
+    }
+}
+
+fun Route.sendOtpToken(
+    uiWalletRepository: UIWalletRepository
+) {
+    get("request-otp") {
+        val emailAddress = call.queryParameters["email"]
+        val purpose = call.queryParameters["purpose"]
+        if (emailAddress == null || purpose == null) {
+            call.respond(
+                HttpStatusCode.NotAcceptable, "Email Address and purpose is required"
+            )
+            return@get
+        }
+        val user = uiWalletRepository.getUserById(
+            matricNumber = null,
+            emailAddress = emailAddress,
+            objectId = null
+        )
+        if (user is Result.Error) {
+            val errorMessage = user.error.toErrorMessage()
+            call.respond(
+                HttpStatusCode.NotFound, errorMessage
+            )
+            return@get
+        }
+
+        val token = (100000..999999).random().toString()
+
+        val mailSendResult = MailService.sendVerificationToken(
+            userEmail = emailAddress,
+            token = token
+        )
+        println("Token is $token")
+        if (mailSendResult is Result.Error) {
+            call.respond(HttpStatusCode.NotAcceptable, "Unable to send mail to your email address")
+            return@get
+            //
+        }
+
+        val regex = Regex("\\w+}")
+        val userId = (user as Result.Success).data.id.toString()
+        //println("Added user $addedUserObjectId")
+        // val userId = regex.find(addedUserObjectId)!!.value.dropLast(1)
+
+        val tokenEntity = TokenEntity(
+            userId = userId,
+            hashedToken = token,
+            purpose = purpose,
+            expiresAt = System.currentTimeMillis() + 5L * 60L * 1000L
+        )
+
+        uiWalletRepository.addToken(token = tokenEntity)
+        call.respond(HttpStatusCode.OK, ServerResponse(data = "Otp Code sent to $emailAddress"))
 
     }
 }

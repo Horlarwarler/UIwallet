@@ -48,9 +48,9 @@ class ScreenNavigation(private val navController: NavController) {
     }
 
     val navigateToOtpScreen: (
-        String
-    ) -> Unit = { email ->
-        navController.navigate(Route.OtpRoute(emailAddress = email))
+        String, String
+    ) -> Unit = { email, id ->
+        navController.navigate(Route.OtpRoute(emailAddress = email, userId = id))
     }
 
     val navigateToResetPassword: () -> Unit = {

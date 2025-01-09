@@ -6,13 +6,18 @@ interface SharedPreference {
 
     fun editShowOnboarding(value: Boolean)
 
-    fun editServerApiKey(apiKey :String)
+    fun editPublicEcKey(apiKey :String)
 
-    val serverApiKey :String?
+    val publicEcKey :String?
+
+    fun editPublicRsaKey(apiKey :String)
+
+    val publicRsaKey :String?
 
     companion object {
         const val SHOW_ONBOARDING = "show_onboarding"
-        const val SERVER_PUBLIC_KEY= "server_public_key"
+        const val PUBLIC_EC_KEY= "public_ec_key"
+        const val PUBLIC_RSA_KEY= "public_rsa_key"
 
     }
 }

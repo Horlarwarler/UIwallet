@@ -1,13 +1,18 @@
 package com.crezent.finalyearproject.authentication.presentation.signup
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.crezent.finalyearproject.authentication.data.AuthenticationRepo
 import com.crezent.finalyearproject.domain.util.ValidationUtils
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 
-class SignUpViewModel : ViewModel() {
+class SignUpViewModel(
+    private val authenticationRepo: AuthenticationRepo
+) : ViewModel() {
     val channel: Channel<SignUpEvent> = Channel()
 
     private val _signUpState = MutableStateFlow(SignUpScreenState())
@@ -137,6 +142,15 @@ class SignUpViewModel : ViewModel() {
     }
 
     private fun signUp() {
-
+        viewModelScope.launch {
+            authenticationRepo.signUp(
+                emailAddress = signUpScreenState.value.email,
+                password = signUpScreenState.value.password,
+                fullName = signUpScreenState.value.fullName,
+                gender = signUpScreenState.value.gender,
+                phoneNumber = signUpScreenState.value.phoneNumber,
+                matricNumber = signUpScreenState.value.matricNumber
+            )
+        }
     }
 }

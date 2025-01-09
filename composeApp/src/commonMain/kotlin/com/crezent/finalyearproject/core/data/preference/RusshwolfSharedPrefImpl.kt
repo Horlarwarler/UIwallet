@@ -1,7 +1,8 @@
 package com.crezent.finalyearproject.core.data.preference
 
 import com.crezent.finalyearproject.core.domain.preference.SharedPreference
-import com.crezent.finalyearproject.core.domain.preference.SharedPreference.Companion.SERVER_PUBLIC_KEY
+import com.crezent.finalyearproject.core.domain.preference.SharedPreference.Companion.PUBLIC_EC_KEY
+import com.crezent.finalyearproject.core.domain.preference.SharedPreference.Companion.PUBLIC_RSA_KEY
 import com.crezent.finalyearproject.core.domain.preference.SharedPreference.Companion.SHOW_ONBOARDING
 import com.russhwolf.settings.Settings
 
@@ -16,11 +17,19 @@ class RusshwolfSharedPrefImpl(
         settings.putBoolean(SHOW_ONBOARDING, value)
     }
 
-    override fun editServerApiKey(apiKey: String) {
-        settings.putString(SERVER_PUBLIC_KEY, apiKey)
+    override fun editPublicEcKey(apiKey: String) {
+        settings.putString(PUBLIC_EC_KEY, apiKey)
     }
 
-    override val serverApiKey: String?
-        get() = settings.getStringOrNull(SERVER_PUBLIC_KEY)
+    override val publicEcKey: String?
+        get() = settings.getStringOrNull(PUBLIC_EC_KEY)
+
+    override fun editPublicRsaKey(apiKey: String) {
+        settings.putString(PUBLIC_RSA_KEY, apiKey)
+    }
+
+    override val publicRsaKey: String?
+        get() = settings.getStringOrNull(PUBLIC_RSA_KEY)
+
 
 }

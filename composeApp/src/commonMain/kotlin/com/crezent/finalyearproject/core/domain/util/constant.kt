@@ -8,8 +8,9 @@ object ApiRoute {
     const val SAMSUNG_BASE_URL = "http://192.168.47.175:8080"
 
     const val LOGIN = "login"
-
+    const val SIGNUP = "sign-up"
     const val API_KEY = "public-key"
+    const val REQUEST_OTP = "request-otp"
 
 }
 
@@ -19,7 +20,7 @@ object Animations {
     const val LOADING_CIRCLE = "files/animation/loading_circle.json"
     const val LOADING_HORIZONTAL = "files/animation/loading_horizontal.json"
     const val LOADING_REPLACE = "files/animation/loading_replace.json"
-    const val MAIL_SENT= "files/animation/mail_sent.json"
+    const val MAIL_SENT = "files/animation/mail_sent.json"
     const val SUCCESSFUL = "files/animation/successful.json"
 
 }

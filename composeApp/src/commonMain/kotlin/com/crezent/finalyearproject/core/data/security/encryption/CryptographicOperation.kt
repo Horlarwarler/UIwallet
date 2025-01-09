@@ -1,15 +1,18 @@
 package com.crezent.finalyearproject.core.data.security.encryption
 
+import com.crezent.finalyearproject.models.EncryptionKeyValue
+
 expect object CryptographicOperation {
 
     fun encryptData(
         serverPublicKey: String,
 
         data: String
-    ): String
+    ): EncryptionKeyValue
 
     fun decryptData(
-        encryptedData: String
+        encryptedData: String,
+        encryptedAesKey: String
     ): String
 
     fun signData(
@@ -17,13 +20,11 @@ expect object CryptographicOperation {
     ): String
 
 
-
     fun verifySignature(
-        signature:String,
-        dataToVerify:String,
-        publicKey:String
-    ):Boolean
-
+        signature: String,
+        dataToVerify: String,
+        publicKey: String
+    ): Boolean
 
 
 }

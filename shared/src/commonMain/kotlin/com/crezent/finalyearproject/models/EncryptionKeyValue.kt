@@ -1,4 +1,4 @@
-package com.crezent.finalyearproject.utility.security.encryption
+package com.crezent.finalyearproject.models
 
 data class EncryptionKeyValue(
     val aesEncryptedString :String,

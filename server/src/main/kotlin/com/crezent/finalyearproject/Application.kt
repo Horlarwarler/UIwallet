@@ -15,7 +15,7 @@ import java.security.interfaces.ECPublicKey
 const val samsungHost = "192.168.47.175"
 const val iphoneHost = "172.20.10.12"
 fun main() {
-    embeddedServer(Netty, port = SERVER_PORT, host = samsungHost, module = Application::module)
+    embeddedServer(Netty, port = SERVER_PORT, host = iphoneHost, module = Application::module)
         .start(wait = true)
 }
 

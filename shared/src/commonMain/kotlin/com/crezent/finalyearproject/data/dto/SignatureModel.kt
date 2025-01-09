@@ -11,7 +11,9 @@ data class EncryptedModel(
     @SerialName("ec_key") // For verification information send
     val ecKey: String,
     @SerialName("rsa_key") // For returning information to
-    val rsaKey: String
+    val rsaKey: String,
+    @SerialName("aes_key") // For returning information to
+    val aesKey: String,
 )
 
 
