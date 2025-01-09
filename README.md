@@ -27,9 +27,9 @@ Features
 *   **Security**: SecKey and RSA/EC algorithms for advanced encryption.
 
 
-**Screenshot**
+**Authentication Screen**
 ---------------
 
-!\[Login\](/screenshots/login.png)
-!\[Sign Up\](/screenshots/signup.png)
-!\[Otp\](/screenshots/otp.png)
+![Sign Up](/screenshots/signup.png?raw=true "Sign Up")
+![Otp](/screenshots/otp.png?raw=true "Otp")
+![Login](/screenshots/login.png?raw=true "Login" )
