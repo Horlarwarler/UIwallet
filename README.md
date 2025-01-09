@@ -30,7 +30,9 @@ Features
 **Authentication Screen**
 ---------------
 
-<img src="/screenshots/signup.png" width="500" height="500" alt="signup"/>
-<img src="/screenshots/otp.png" width="500" height="500" alt="Otp"/>
-<img src="/screenshots/login.png" width="500" height="500" alt="Login"/>
+[//]: # (<img src="/screenshots/signup.png" width="500" height="500" alt="signup"/>)
+
+[//]: # (<img src="/screenshots/otp.png" width="500" height="500" alt="Otp"/>)
+
+[//]: # (<img src="/screenshots/login.png" width="500" height="500" alt="Login"/>)
 
