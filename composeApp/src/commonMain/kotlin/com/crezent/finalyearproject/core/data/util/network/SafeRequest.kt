@@ -6,6 +6,7 @@ import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.util.network.UnresolvedAddressException
 
 
@@ -19,7 +20,9 @@ suspend inline fun <reified T> safeRequest(
         return Result.Error(error = RemoteError.TimeOutException)
     } catch (e: UnresolvedAddressException) {
         return Result.Error(error = RemoteError.NoInternetConnection)
-    } catch (e: Exception) {
+    }
+
+    catch (e: Exception) {
         return Result.Error(
             error = RemoteError.UnKnownError(
                 message = e.message ?: "Unknown Error"
@@ -45,6 +48,6 @@ suspend inline fun <reified T> responseToResult(
         408 -> Result.Error(RemoteError.TimeOutException)
         429 -> Result.Error(RemoteError.TooManyRequest)
         in 500..599 -> Result.Error(RemoteError.ServerError)
-        else -> Result.Error(RemoteError.UnKnownError("Unknown Error"))
+        else -> Result.Error(RemoteError.UnKnownError(response.bodyAsText()))
     }
 }

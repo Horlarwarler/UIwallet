@@ -23,12 +23,13 @@ suspend inline fun <reified T> ApplicationCall.decryptVerifiedMessage(
         val signature = encryptedDataReceive.signature
         val encryptedData = encryptedDataReceive.encryptedData
         val clientPublicEcKey = encryptedDataReceive.ecKey
+        val aesKey = encryptedDataReceive.aesKey
 
 
         val isVerified = signingService.verifySignature(
             signatureString = signature,
             data = encryptedData,
-            ecPublicKeyString =clientPublicEcKey
+            ecPublicKeyString = clientPublicEcKey
         )
 
         if (!isVerified) {
@@ -37,8 +38,9 @@ suspend inline fun <reified T> ApplicationCall.decryptVerifiedMessage(
         }
 
         val decryptedMessage = encryptService.decryptData(
-            value = encryptedData,
-            privateKeyString = rsaPrivateKeyString
+            aesEncryptedString = encryptedData,
+            privateKeyString = rsaPrivateKeyString,
+            rsaEncryptedKey = aesKey
         ) ?: run {
             respond(status = HttpStatusCode.BadRequest, message = "Bad body attached")
             return Result.Error(error = RemoteError.EncryptDecryptError)
@@ -50,7 +52,7 @@ suspend inline fun <reified T> ApplicationCall.decryptVerifiedMessage(
         Result.Success(
             data = PubicKeyWithDecrypted(
                 data = decodedData,
-              //  ecPublicKey = encryptedDataReceive.ecKey,
+                //  ecPublicKey = encryptedDataReceive.ecKey,
                 rsaPublicKey = encryptedDataReceive.rsaKey
             )
         )

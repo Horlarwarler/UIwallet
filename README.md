@@ -1,19 +1,35 @@
-This is a Kotlin Multiplatform project targeting Android, iOS, Server.
+Digital Wallet for University Fee Payments
+==========================================
 
-* `/composeApp` is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - `commonMain` is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    `iosMain` would be the right folder for such calls.
+A secure, scalable, and user-friendly digital wallet solution designed to assist students in managing tuition fees effectively. The app enables incremental savings, automated payments, and seamless integration with university payment systems.
 
-* `/iosApp` contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform, 
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+Features
+--------
 
-* `/server` is for the Ktor server application.
+*   **Incremental Savings**: Students can save small amounts toward their tuition fees.
 
-* `/shared` is for the code that will be shared between all targets in the project.
-  The most important subfolder is `commonMain`. If preferred, you can add code to the platform-specific folders here too.
+*   **Automated Payments**: Timely fee transfers directly to the university.
+
+*   **User Notifications**: Alerts for savings milestones and payment deadlines.
+
+*   **Cross-Platform Support**: Available on Android and iOS.
 
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+**Technology Stack**
+--------------------
+
+*   **Frontend**: Kotlin Multiplatform for Android and iOS apps, Jetpack Compose for UI.
+
+*   **Backend**: Ktor Framework with MongoDB for database management.
+
+*   **Design**: Figma for prototyping and UI/UX design.
+
+*   **Security**: SecKey and RSA/EC algorithms for advanced encryption.
+
+
+**Screenshot**
+---------------
+
+!\[Login\](screenshots/login.png)
+!\[Sign Up\](screenshots/signup.png)
+!\[Otp\](screenshots/otp.png)

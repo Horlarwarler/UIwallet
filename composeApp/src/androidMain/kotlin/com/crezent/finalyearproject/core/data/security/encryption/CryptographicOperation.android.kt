@@ -1,35 +1,34 @@
 package com.crezent.finalyearproject.core.data.security.encryption
 
+import android.os.Build
 import android.security.keystore.KeyProperties
-import android.util.Base64
+import androidx.annotation.RequiresApi
+import com.crezent.finalyearproject.AES_TRANSFORMATION
 import com.crezent.finalyearproject.ANDROID_KEY_STORE
 import com.crezent.finalyearproject.EC_ALIAS
 import com.crezent.finalyearproject.RSA_ALIAS
 import com.crezent.finalyearproject.SIGNATURE_ALGORITHM
 import com.crezent.finalyearproject.TRANSFORMATION
-import java.security.InvalidKeyException
+import com.crezent.finalyearproject.core.data.util.JavaBase64Util
+import com.crezent.finalyearproject.models.EncryptionKeyValue
 import java.security.KeyFactory
 import java.security.KeyStore
 import java.security.KeyStore.PrivateKeyEntry
 import java.security.PublicKey
-import java.security.Security
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
+import java.util.Base64
 import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 
 actual object CryptographicOperation {
 
-    private const val GCM_IV_LENGTH = 12
-    private const val GCM_TAG_LENGTH = 16
-
-    init {
-        if (Security.getProvider("BC") == null) {
-            // Security.addProvider(BouncyCastleProvider())
-        }
-        //Security.addProvider(BouncyCastleProvider())
-
-    }
+    val base64Util = JavaBase64Util()
 
     private val keyStore = KeyStore.getInstance(ANDROID_KEY_STORE).apply {
         load(null)
@@ -46,43 +45,80 @@ actual object CryptographicOperation {
     }
 
 
-    actual fun encryptData(serverPublicKey: String, data: String): String {
-
-        val publicKey = decodePublicKey(serverPublicKey)
-        println("Public key decoded successfully")
-
-        // Print available providers and their algorithms
+    @RequiresApi(Build.VERSION_CODES.O)
+    actual fun encryptData(serverPublicKey: String, data: String): EncryptionKeyValue {
 
 
-        println("Using transformation: $TRANSFORMATION")
+        val publicKey = decodePublicKey(serverPublicKey, KeyProperties.KEY_ALGORITHM_RSA)
+
+
+        val aesPublicKey = generateAesPublicKey()
+
+        val aesCipher = Cipher.getInstance(AES_TRANSFORMATION)
+        aesCipher.init(Cipher.ENCRYPT_MODE, aesPublicKey)
+        //val aesEncryptedValue = aesCipher.doFinal(data.toByteArray())
+        // val aesEncrypted = Base64.getEncoder().encodeToString(aesEncryptedValue)
+        val iv = aesCipher.iv
+        val aesEncryptedValue = aesCipher.doFinal(data.toByteArray())
+        println(aesEncryptedValue)
+        val aesEncrypted =
+            Base64.getEncoder().encodeToString(aesEncryptedValue) + ":" + Base64.getEncoder()
+                .encodeToString(iv)
+
+        // println("AES $aesEncrypted")
+
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        println("Cipher created successfully")
 
-        cipher.init(Cipher.ENCRYPT_MODE, publicKey)
+        cipher.init(Cipher.PUBLIC_KEY, publicKey)
         println("Cipher initialized successfully")
 
-        val encrypted = cipher.doFinal(data.toByteArray(Charsets.UTF_8))
-        println("Encryption completed. Encrypted length: ${encrypted.size}")
 
-        val result = Base64.encodeToString(encrypted, Base64.DEFAULT)
-        println("Base64 encoding completed. Final length: ${result.length}")
+        val encrypted = cipher.doFinal(aesPublicKey.encoded)
 
-        return result
+        println("Encryption completed. Encrypted length: ${encrypted.size} and ${aesPublicKey.encoded.size}")
+
+        val rsaEncryptedKey = Base64.getEncoder().encodeToString(encrypted)
+        println("Base64 encoding completed. Final length: $rsaEncryptedKey}")
+
+        return EncryptionKeyValue(
+            aesEncryptedString = aesEncrypted,
+            rsaEncryptedKey = rsaEncryptedKey
+        )
 
 
     }
 
-    actual fun decryptData(encryptedData: String): String {
+    @RequiresApi(Build.VERSION_CODES.O)
+    actual fun decryptData(encryptedData: String, encryptedAesKey: String): String {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         val privateKey = rsaKeyEntry?.privateKey
 
         cipher.init(Cipher.DECRYPT_MODE, privateKey)
-        val decipher = cipher.doFinal(encryptedData.toByteArray(Charsets.UTF_8))
-        return Base64.encodeToString(
-            decipher, Base64.DEFAULT
-        )
+        val decodedAesByte = org.bouncycastle.util.encoders.Base64.decode(encryptedAesKey)
+        val decryptedAesKey = cipher.doFinal(decodedAesByte)
+        val originalKey: SecretKey =
+            SecretKeySpec(decryptedAesKey, "AES")
+
+
+
+        val parts = encryptedData.split(":")
+        val mainPart = org.bouncycastle.util.encoders.Base64.decode(parts[0])
+        val iv = org.bouncycastle.util.encoders.Base64.decode(parts[1])
+        val gcmParameterSpec = GCMParameterSpec(128, iv)
+
+        val aesCipher = Cipher.getInstance(AES_TRANSFORMATION)
+        aesCipher.init(Cipher.DECRYPT_MODE, originalKey, gcmParameterSpec)
+
+        val messageByte =
+            aesCipher.doFinal(mainPart)
+        val message = String(messageByte, Charsets.UTF_8)
+        return message
+
+
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    @OptIn(ExperimentalEncodingApi::class)
     actual fun signData(dataToSign: String): String {
         try {
 
@@ -90,39 +126,44 @@ actual object CryptographicOperation {
             val privateKey = ecKeyEntry?.privateKey
             signature.initSign(privateKey)
             signature.update(dataToSign.toByteArray())
-            return Base64.encodeToString(signature.sign(), Base64.DEFAULT)
+            return base64Util.encodeToString(signature.sign())
+            //    return Base64.encodeToString(signature.sign(), Base64.DEFAULT)
         } catch (error: Exception) {
             error.printStackTrace()
             throw Exception()
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     actual fun verifySignature(
         signature: String,
         dataToVerify: String,
         publicKey: String
     ): Boolean {
+        val publicKeyInstance = decodePublicKey(publicKey, KeyProperties.KEY_ALGORITHM_EC)
+        val signatureInstance = Signature.getInstance(SIGNATURE_ALGORITHM)
+        signatureInstance.initVerify(publicKeyInstance)
+        signatureInstance.update(dataToVerify.toByteArray())
+        return signatureInstance.verify(org.bouncycastle.util.encoders.Base64.decode(signature))
 
-        try {
-
-            val publicKeyInstance = decodePublicKey(publicKey)
-            val signatureInstance = Signature.getInstance(SIGNATURE_ALGORITHM)
-            signatureInstance.initVerify(publicKeyInstance)
-            signatureInstance.update(dataToVerify.toByteArray())
-            return signatureInstance.verify(Base64.decode(dataToVerify, Base64.DEFAULT))
-        } catch (error: InvalidKeyException) {
-            error.printStackTrace()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return false
     }
 
-    private fun decodePublicKey(publicKeyString: String): PublicKey {
-        val decodedByte = Base64.decode(publicKeyString, Base64.DEFAULT)
-        val keyFactory = KeyFactory.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun decodePublicKey(publicKeyString: String, algorithm: String): PublicKey {
+        val decodedByte = org.bouncycastle.util.encoders.Base64.decode(publicKeyString)
+        val keyFactory = KeyFactory.getInstance(algorithm)
         val keySpec = X509EncodedKeySpec(decodedByte)
         return keyFactory.generatePublic(keySpec)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun generateAesPublicKey(): SecretKey {
+
+        val keyPairGenerator = KeyGenerator.getInstance("AES")
+        keyPairGenerator.init(128)
+        val keyPair = keyPairGenerator.generateKey()
+        return keyPair
+
     }
 
 }

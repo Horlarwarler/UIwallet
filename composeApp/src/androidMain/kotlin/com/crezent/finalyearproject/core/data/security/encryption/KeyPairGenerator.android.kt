@@ -30,7 +30,7 @@ actual object KeyPairGenerator {
 
     private fun generateRsaKey() {
         if (keyStore != null && keyStore.containsAlias(RSA_ALIAS)) {
-//            keyStore.deleteEntry(RSA_ALIAS)
+            // keyStore?.deleteEntry(RSA_ALIAS)
             return
         }
         val keyPairGenerator = KeyPairGenerator.getInstance(
@@ -42,8 +42,12 @@ actual object KeyPairGenerator {
             KeyProperties.PURPOSE_ENCRYPT or
                     KeyProperties.PURPOSE_DECRYPT
         )
-            .setDigests(KeyProperties.DIGEST_SHA256)
-            .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_OAEP)
+            .setDigests(
+                KeyProperties.DIGEST_SHA1,
+                KeyProperties.DIGEST_SHA256
+            ) // Allow SHA-1 and SHA-256
+            .setKeySize(2048)
             .setBlockModes(KeyProperties.BLOCK_MODE_ECB)
             .setUserAuthenticationRequired(false)
             .build()
@@ -56,8 +60,8 @@ actual object KeyPairGenerator {
 
     private fun generateEcKey() {
         if (keyStore != null && keyStore.containsAlias(EC_ALIAS)) {
-
-            println("EC KEY ALREADY EXIST")
+//            keyStore?.deleteEntry(EC_ALIAS)
+//            println("EC KEY ALREADY EXIST")
             return
         }
 
@@ -82,20 +86,10 @@ actual object KeyPairGenerator {
     actual fun getClientKeyPair(alias: String): String {
         val keyPair = keyStore!!.getEntry(alias, null) as? PrivateKeyEntry
 
+        val publicKey =
+            Base64.encodeToString(keyPair?.certificate?.publicKey?.encoded, Base64.DEFAULT)
 
-        if (keyPair == null) {
-            println("ALIAS $alias null ")
-        } else {
-            println("ALIAS not null ")
 
-        }
-        val encodedArray = keyPair?.certificate?.publicKey?.encoded
-
-        if (encodedArray == null) {
-            println("Encoded is  n null ")
-
-        }
-        val publicKey = Base64.encodeToString(keyPair?.certificate?.encoded, Base64.DEFAULT)
         return publicKey
     }
 

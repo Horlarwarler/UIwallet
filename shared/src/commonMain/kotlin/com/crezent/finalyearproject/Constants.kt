@@ -6,7 +6,8 @@ const val SERVER_PORT = 8080
 //const val TRANSFORMATION = "ECDSA"
 
 const val ANDROID_TRANSFORMATION = "EC"
-const val TRANSFORMATION = "RSA/ECB/PKCS1Padding"
+const val TRANSFORMATION = "RSA/ECB/OAEPPadding"
+const val AES_TRANSFORMATION = "AES/GCM/NoPadding"
 
 
 const val RSA_ALIAS = "apiKeys"

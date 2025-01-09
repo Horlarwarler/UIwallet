@@ -1,6 +1,7 @@
 package com.crezent.finalyearproject.authentication.data.network
 
-import com.crezent.finalyearproject.data.dto.LoggedInUser
+import com.crezent.finalyearproject.data.dto.EncryptedModel
+import com.crezent.finalyearproject.data.dto.PublicKey
 import com.crezent.finalyearproject.data.dto.ServerResponse
 import com.crezent.finalyearproject.domain.util.RemoteError
 import com.crezent.finalyearproject.domain.util.Result
@@ -11,13 +12,16 @@ interface AuthenticationRemote {
         encryptedData: String,
         signature: String,
         clientEcKey: String,
-        clientRsaKey: String
-    ): Result<ServerResponse<LoggedInUser>, RemoteError>
+        clientRsaKey: String,
+        aesKey: String
+    ): Result<ServerResponse<EncryptedModel>, RemoteError>
 
     suspend fun signUp(
         encryptedData: String,
         signature: String,
-        clientPublicKey: String
+        clientEcKey: String,
+        clientRsaKey: String,
+        aesKey: String
     ): Result<ServerResponse<String>, RemoteError>
 
 
@@ -41,7 +45,12 @@ interface AuthenticationRemote {
         clientPublicKey: String
     ): Result<ServerResponse<String>, RemoteError>
 
-    suspend fun getServerPublicKey(): Result<ServerResponse<String>, RemoteError>
+    suspend fun sendOtp(
+        emailAddress: String,
+        purpose: String
+    ) : Result<ServerResponse<String>, RemoteError>
+
+    suspend fun getServerPublicKey(): Result<ServerResponse<PublicKey>, RemoteError>
 
 
 }

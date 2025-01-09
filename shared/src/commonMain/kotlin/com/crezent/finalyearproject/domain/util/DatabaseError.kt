@@ -10,11 +10,25 @@ sealed interface DatabaseError : Error {
     data class OtherError(val error: String) : DatabaseError
 }
 
-fun DatabaseError.toErrorMessage(): String {
+fun DatabaseError.toErrorMessage(
+    errorToType: DatabaseErrorToType = DatabaseErrorToType.UserError
+): String {
     return when (this) {
-        DatabaseError.DuplicateEntry -> "Item already exist"
-        DatabaseError.InsertingError -> "Unable to insert item"
-        DatabaseError.ItemNotFound -> "Item with this not found"
+        DatabaseError.DuplicateEntry -> errorToType.duplicateEntry
+        DatabaseError.InsertingError -> errorToType.insertingError
+        DatabaseError.ItemNotFound -> errorToType.itemNotFound
         is DatabaseError.OtherError -> error
     }
+}
+
+sealed class DatabaseErrorToType(
+    val duplicateEntry: String = "Item already exist",
+    val insertingError: String = "Unable to insert item",
+    val itemNotFound: String = "Item with this not found"
+) {
+    data object UserError : DatabaseErrorToType(
+        duplicateEntry = "User With this email, matric number or phone number already exist",
+        insertingError = "Unable to register user",
+        itemNotFound = "email address or phone number not correct"
+    )
 }

@@ -27,7 +27,9 @@ sealed interface Route {
     @Serializable
     data class OtpRoute(
         @SerialName("email")
-        val emailAddress: String
+        val emailAddress: String,
+        @SerialName("user_id")
+        val userId: String
     ) : Route
 
 

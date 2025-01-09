@@ -1,16 +1,20 @@
 package com.crezent.finalyearproject.utility.security.encryption
 
+import com.crezent.finalyearproject.AES_TRANSFORMATION
 import com.crezent.finalyearproject.TRANSFORMATION
-import org.koin.core.logger.Logger
+import com.crezent.finalyearproject.models.EncryptionKeyValue
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyFactory
-import java.security.PrivateKey
-import java.security.PublicKey
 import java.security.Security
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
-import java.util.*
+import java.util.Base64
 import javax.crypto.Cipher
-import org.bouncycastle.jce.provider.BouncyCastleProvider
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 
 class ECBEncryptService : EncryptService {
@@ -19,53 +23,129 @@ class ECBEncryptService : EncryptService {
         Security.addProvider(BouncyCastleProvider())
     }
 
-    override fun decryptData(value: String, privateKeyString: String): String? {
+    @OptIn(ExperimentalEncodingApi::class)
+    override fun decryptData(
+        aesEncryptedString: String,
+        privateKeyString: String,
+        rsaEncryptedKey: String
+    ): String? {
         return try {
 
-            val privateKeyBytes = Base64.getDecoder().decode(privateKeyString)
-            val privateKeySpec = PKCS8EncodedKeySpec(privateKeyBytes)
-            val keyFactory = KeyFactory.getInstance("EC")
-            val privateKey = keyFactory.generatePrivate(privateKeySpec) //Here is error happern
-            Security.getProviders().forEach {
-                println("Provider ${it.name}")
-            }
-            val cipher = Cipher.getInstance(TRANSFORMATION,"AndroidKeyStore")
+            // We decrypt the AES Key
 
-            //   val cipher = Cipher.getInstance(TRANSFORMATION)
+            // We use the private key from the server to  decrypt rsa encrypted
+            println(privateKeyString)
+
+            val privateKeyBytes = org.bouncycastle.util.encoders.Base64.decode(privateKeyString)
+            val privateKeySpec = PKCS8EncodedKeySpec(privateKeyBytes)
+
+            val keyFactory = KeyFactory.getInstance("RSA")
+            val privateKey = keyFactory.generatePrivate(privateKeySpec)
+
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+
+            println("CIPHER ${cipher.algorithm} c${cipher} and padding${cipher.blockSize}")
             cipher.init(Cipher.DECRYPT_MODE, privateKey!!)
-            val decoded = cipher.doFinal(Base64.getDecoder().decode(value))
-            String(decoded, Charsets.UTF_8)
+
+            val keyToDecode = org.bouncycastle.util.encoders.Base64.decode(rsaEncryptedKey)
+            println("Key to code is ${keyToDecode.size}")
+
+            val decodedAesKey = cipher.doFinal(keyToDecode)
+
+            val decodedAesAsString = org.bouncycastle.util.encoders.Base64.toBase64String(decodedAesKey)
+
+            println("Decoded aes $decodedAesAsString")
+
+            val originalKey: SecretKey = SecretKeySpec(decodedAesKey, "AES")
+            val splitText = aesEncryptedString.split(":")
+            val partOne = splitText[0]
+            val partTwo = splitText[1]
+            println("Part one is $partOne")
+            println("Part two is $partTwo")
+            val mainPart = Base64.getDecoder().decode(splitText[0])
+
+
+            val iv = Base64.getDecoder().decode(splitText[1])
+
+            val gcmParameterSpec = GCMParameterSpec(128, iv)
+            val aesCipher = Cipher.getInstance(AES_TRANSFORMATION)
+            aesCipher.init(Cipher.DECRYPT_MODE, originalKey, gcmParameterSpec)
+
+            val byte = Base64.getDecoder().decode(partOne)
+            println(byte)
+            val messageByte = aesCipher.doFinal(byte)
+            val message = String(messageByte, Charsets.UTF_8)
+            println(message)
+            message
+
+
         } catch (e: Exception) {
+            println(e.message)
+            println(e.cause)
             e.printStackTrace()
             null
         }
     }
-    //MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7H6dMObJlo5nb3PuLpa9
-    //A4G26Wc+NM1eD5WzAHzJgb0N+PGZ0mxB8SrgBc9xbapCkeWKtJCXBXrt6jPd/aUB
-    //wxGBIbcxWXoYDDpjYNFwIUnAohU1pRo8uA9QJ/ZnJAkDhZjuX65YlJqPV1yyyK8f
-    //yH5YwrCdkPulP7PHOp8EtGxDiVaqahZJSPMCe/U7H2IrnsHHyDBaOnSPvN8MXFbN
-    //O+UmVm0HXufP54llGMpiBilx+WcBNo+8+vx2gsWA2NeZwvv7N71oCBKpbLswakqj
-    //92aksAhD034tITq4BsL8aQbMmHTVMfaMjoea9IkkAELSHAZqlNwqQP7FaZ51Fv5n
-    //6QIDAQAB
 
-    override fun encryptData(value: String, publicKeyString: String): String? {
+
+    override fun encryptData(value: String, clientRsapublicKey: String): EncryptionKeyValue? {
         return try {
-            val publicKeyBytes = Base64.getDecoder().decode(publicKeyString)
-            val publicKeySpec = X509EncodedKeySpec(publicKeyBytes)
-            val keyFactory = KeyFactory.getInstance("EC")
-            val publicKey = keyFactory.generatePublic(publicKeySpec)
+
+            val aesPublicKey = generateAesPublicKey()
+
+            val rsaPublicKeyBytes = org.bouncycastle.util.encoders.Base64.decode(clientRsapublicKey)
+
+
+            val testString =   org.bouncycastle.util.encoders.Base64.toBase64String(aesPublicKey.encoded)
+            println("Test $testString")
+            val rsaPublicKeySpec = X509EncodedKeySpec(rsaPublicKeyBytes)
+            val keyFactory = KeyFactory.getInstance("RSA")
+
+
+            val rsaPublicKey = keyFactory.generatePublic(rsaPublicKeySpec)
 
             //  val cipher = Cipher.getInstance(TRANSFORMATION)
             val cipher = Cipher.getInstance(TRANSFORMATION)
 
-            cipher.init(Cipher.ENCRYPT_MODE, publicKey)
-            val decipher = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
-            Base64.getEncoder().encodeToString(decipher)
+            cipher.init(Cipher.ENCRYPT_MODE, rsaPublicKey)
+
+            val aesEncryptedKeyByte = cipher.doFinal(aesPublicKey.encoded)
+
+
+            val aesCipher = Cipher.getInstance(AES_TRANSFORMATION)
+
+
+            //Encrypt the generated AES key with the RSA public key
+
+            aesCipher.init(Cipher.ENCRYPT_MODE, aesPublicKey)
+            val iv = aesCipher.iv
+            val aesEncryptedValue = aesCipher.doFinal(value.toByteArray())
+
+
+            val aesEncrypted =
+                org.bouncycastle.util.encoders.Base64.toBase64String(aesEncryptedValue) + ":" + org.bouncycastle.util.encoders.Base64.toBase64String(
+                    iv
+                )
+
+            val encryptedKey = org.bouncycastle.util.encoders.Base64.toBase64String(aesEncryptedKeyByte)
+            EncryptionKeyValue(
+                aesEncryptedString = aesEncrypted,
+                rsaEncryptedKey = encryptedKey
+            )
 
         } catch (e: Exception) {
             println("Exception while deciphering $e")
             null
         }
+
+    }
+
+    private fun generateAesPublicKey(): SecretKey {
+
+        val keyPairGenerator = KeyGenerator.getInstance("AES")
+        keyPairGenerator.init(128)
+        val keyPair = keyPairGenerator.generateKey()
+        return keyPair
 
     }
 }
