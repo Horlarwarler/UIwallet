@@ -30,6 +30,7 @@ Features
 **Authentication Screen**
 ---------------
 
-![Sign Up](/screenshots/signup.png?raw=true "Sign Up")
-![Otp](/screenshots/otp.png?raw=true "Otp")
-![Login](/screenshots/login.png?raw=true "Login" )
+<img src="/screenshots/signup.png" width="500" height="500" alt="signup"/>
+<img src="/screenshots/otp.png" width="500" height="500" alt="Otp"/>
+<img src="/screenshots/login.png" width="500" height="500" alt="Login"/>
+
