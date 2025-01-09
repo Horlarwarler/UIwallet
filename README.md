@@ -30,6 +30,6 @@ Features
 **Screenshot**
 ---------------
 
-!\[Login\](screenshots/login.png)
-!\[Sign Up\](screenshots/signup.png)
-!\[Otp\](screenshots/otp.png)
+!\[Login\](/screenshots/login.png)
+!\[Sign Up\](/screenshots/signup.png)
+!\[Otp\](/screenshots/otp.png)
