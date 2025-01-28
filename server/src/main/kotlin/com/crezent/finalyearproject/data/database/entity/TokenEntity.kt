@@ -7,6 +7,7 @@ data class TokenEntity(
     @BsonId
     val id: ObjectId = ObjectId(),
     val userId: String,
+    val emailAddress:String,
     val hashedToken: String,
     val purpose: String,
     val expiresAt: Long

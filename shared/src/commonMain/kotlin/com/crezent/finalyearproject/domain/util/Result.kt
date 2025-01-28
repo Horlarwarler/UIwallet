@@ -2,13 +2,20 @@ package com.crezent.finalyearproject.domain.util
 
 typealias ResultError = Error
 
-sealed interface Result<out T, out ResultError> {
+sealed interface Result<out T, out E: Error> {
 
-    data class Error<out ResultError>(val error: ResultError) : Result<Nothing, ResultError>
+    data class Error<out E: ResultError>(val error: E) : Result<Nothing, E>
 
     data class Success<out T>(val data: T) : Result<T, Nothing>
 
 }
+
+//sealed interface Result<out D, out E: Error> {
+//    data class Success<out D>(val data: D): Result<D, Nothing>
+//    data class Error<out E: com.plcoding.bookpedia.core.domain.Error>(val error: E):
+//        Result<Nothing, E>
+//}
+
 
 
 inline fun <T, E : Error, R> Result<T, E>.map(map: (T) -> R): Result<R, E> {

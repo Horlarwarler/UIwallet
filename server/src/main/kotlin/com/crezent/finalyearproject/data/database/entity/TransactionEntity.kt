@@ -17,8 +17,8 @@ data class TransactionEntity(
     val emailId: String,
     val fundingSource: String
 ) {
-    fun toTransaction(): Transaction {
-        return Transaction(
+    fun toTransaction(): TransactionDto {
+        return TransactionDto(
             transactionId = id.toString(),
             transactionTitle = transactionTitle,
             transactionDescription = transactionDescription,
@@ -27,11 +27,11 @@ data class TransactionEntity(
             transactionType = TransactionType.valueOf(transactionType),
             transactionDate = transactionDate,
             emailId = emailId,
-            fundingSource = fundingSource.toFundingSource(),
+            fundingSourceDto = fundingSource.toFundingSource(),
         )
     }
 
-    private fun String.toFundingSource(): FundingSource {
+    private fun String.toFundingSource(): FundingSourceDto {
         val endIndex = indexOf("\"", 9)
 
         val stringBefore = substring(startIndex = 9, endIndex = endIndex)

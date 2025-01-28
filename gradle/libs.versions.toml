@@ -88,6 +88,8 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor-version" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor-version" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor-version" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor-version" }
+
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle-viewmodel-compose-version" }
 
 #Koin

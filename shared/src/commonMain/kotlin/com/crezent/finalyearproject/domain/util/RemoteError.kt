@@ -13,9 +13,11 @@ sealed interface RemoteError : Error {
 
     data object BadTransformation : RemoteError
 
-    data object TooManyRequest :RemoteError
+    data object TooManyRequest : RemoteError
 
-    data object ServerError :RemoteError
+    data object ServerError : RemoteError
+
+    data object UnAuthorised : RemoteError
     data class UnKnownError(val message: String) : RemoteError
 
 }
@@ -34,6 +36,7 @@ fun RemoteError.toErrorMessage(): String {
         is RemoteError.UnKnownError -> this.message
         RemoteError.TooManyRequest -> "Too many request"
         RemoteError.ServerError -> "Server Error"
+        RemoteError.UnAuthorised -> "Session is expired, retry"
     }
 
 }

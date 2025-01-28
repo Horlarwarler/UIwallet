@@ -2,6 +2,10 @@ package com.crezent.finalyearproject.data.repo
 
 import com.crezent.finalyearproject.data.database.entity.TokenEntity
 import com.crezent.finalyearproject.data.database.entity.UserEntity
+import com.crezent.finalyearproject.data.database.entity.WalletEntity
+import com.crezent.finalyearproject.data.repo.UIWalletRepository.Companion.TOKEN_COLLECTION
+import com.crezent.finalyearproject.data.repo.UIWalletRepository.Companion.USER_COLLECTION
+import com.crezent.finalyearproject.data.util.insert
 import com.crezent.finalyearproject.domain.util.DatabaseError
 import com.crezent.finalyearproject.domain.util.Result
 import com.crezent.finalyearproject.models.User
@@ -22,13 +26,6 @@ class KMongoUIWalletImpl(
     private val db: MongoDatabase
 ) : UIWalletRepository {
 
-    companion object {
-        const val USER_COLLECTION = "USERS"
-        const val WALLET_COLLECTION = "WALLET"
-        const val TRANSACTION_COLLECTION = "TRANSACTIONS"
-        const val CARD_COLLECTION = "CARDS"
-        const val TOKEN_COLLECTION = "TOKEN"
-    }
 
     private val userCollection = db.getCollection<UserEntity>(USER_COLLECTION)
 
@@ -64,7 +61,7 @@ class KMongoUIWalletImpl(
         }
     }
 
-    override suspend fun addUser(user: UserEntity): Result<BsonValue, DatabaseError> {
+    override suspend fun addUser(user: UserEntity): Result<String, DatabaseError> {
 
         return insert(data = user, collection = userCollection)
 
@@ -84,7 +81,7 @@ class KMongoUIWalletImpl(
         }
     }
 
-    override suspend fun addToken(token: TokenEntity): Result<BsonValue, DatabaseError> {
+    override suspend fun addToken(token: TokenEntity): Result<String, DatabaseError> {
 
         return insert(data = token, collection = tokenCollection)
 
@@ -97,12 +94,20 @@ class KMongoUIWalletImpl(
         )
     }
 
-    override suspend fun getTokenById(token: String, userId: String): Result<TokenEntity, DatabaseError> {
+    override suspend fun getTokenById(
+        token: String,
+        userId: String?,
+        emailAddress: String?
+    ): Result<TokenEntity, DatabaseError> {
         try {
             val tokenFilter = Filters.eq(TokenEntity::hashedToken.name, token)
             val userFilter = Filters.eq(TokenEntity::userId.name, userId)
+            val emailFilter = Filters.eq(TokenEntity::emailAddress.name, emailAddress)
+            val mergedFilter = Filters.and(
+                tokenFilter, Filters.or(userFilter, emailFilter)
+            )
             val tokenEntity =
-                tokenCollection.find(Filters.and(tokenFilter, userFilter)).firstOrNull() ?: return Result.Error(
+                tokenCollection.find(mergedFilter).firstOrNull() ?: return Result.Error(
                     error = DatabaseError.ItemNotFound
                 )
             return Result.Success(data = tokenEntity)
@@ -117,21 +122,46 @@ class KMongoUIWalletImpl(
 
     }
 
+    override suspend fun getTokenByEmail(emailAddress: String, purpose: String): Result<TokenEntity, DatabaseError> {
+        try {
+            val emailFilter = Filters.eq(TokenEntity::emailAddress.name, emailAddress)
+            val purposeFilter = Filters.eq(TokenEntity::purpose.name, purpose)
+
+            val mergedFilter = Filters.and(emailFilter, purposeFilter)
+
+            val tokenEntity =
+                tokenCollection.find(mergedFilter).firstOrNull() ?: return Result.Error(
+                    error = DatabaseError.ItemNotFound
+                )
+            return Result.Success(data = tokenEntity)
+        } catch (e: MongoException) {
+
+            return Result.Error(DatabaseError.OtherError(error = e.message ?: "Mongo Exception Unknown Errro"))
+
+        } catch (e: Exception) {
+            return Result.Error(DatabaseError.OtherError(error = e.message ?: "Unknown Errro"))
+
+        }
+    }
+
     override suspend fun updateUserEmailVerify(
-        userId: ObjectId,
+        emailAddress: String,
         isVerified: Boolean
     ): Result<UserEntity, DatabaseError> {
         try {
 
-            val bson = Filters.eq("_id", userId)
-            val verifiedString = if (isVerified) "true" else "false"
+            val bson = Filters.eq(UserEntity::emailAddress.name, emailAddress)
+
+            val verifiedString = "true"
+            val walletEntity = WalletEntity()
             val userEntity = userCollection.findOneAndUpdate(
                 filter = bson,
                 update = Updates.combine(
                     Updates.set(UserEntity::emailAddressVerified.name, verifiedString),
                     Updates.set(UserEntity::accountStatus.name, "active"),
+                    Updates.set(UserEntity::wallet.name, walletEntity)
 
-                    )
+                )
             ) ?: return Result.Error(
                 error = DatabaseError.ItemNotFound
             )
@@ -154,24 +184,6 @@ class KMongoUIWalletImpl(
         }
     }
 
-    private suspend fun <Entity : Any> insert(
-        data: Entity,
-        collection: MongoCollection<Entity>
-    ): Result<BsonValue, DatabaseError> {
-        try {
-            val id = collection.insertOne(data).insertedId ?: kotlin.run {
-                return Result.Error(DatabaseError.InsertingError)
-            }
-            return Result.Success(data = id)
-        } catch (e: MongoException) {
-
-            return Result.Error(DatabaseError.OtherError(error = e.message ?: "Mongo Exception Unknown Errro"))
-
-        } catch (e: Exception) {
-            return Result.Error(DatabaseError.OtherError(error = e.message ?: "Unknown Errro"))
-
-        }
-    }
 
     private suspend fun <Entity : Any> deleteData(
         filters: Bson,
@@ -191,5 +203,48 @@ class KMongoUIWalletImpl(
         }
     }
 
+    override suspend fun deleteExistingToken(userId: String): Result<Boolean, DatabaseError> {
+        try {
+            val tokenResult = tokenCollection.deleteMany(
+                filter = Filters.eq("userId", userId)
+            )
+            return Result.Success(tokenResult.wasAcknowledged())
+        } catch (e: MongoException) {
 
+            return Result.Error(DatabaseError.OtherError(error = e.message ?: "Mongo Exception Unknown Errro"))
+
+        } catch (e: Exception) {
+            return Result.Error(DatabaseError.OtherError(error = e.message ?: "Unknown Errro"))
+
+        }
+    }
+
+    override suspend fun updateUser(user: UserEntity): Result<UserEntity, DatabaseError> {
+        try {
+
+            val userUpdateResult = userCollection.findOneAndUpdate(
+                filter = Filters.eq("_id", user.id),
+                update = Updates.combine(
+                    Updates.set(UserEntity::accountStatus.name, user.accountStatus),
+                    Updates.set(UserEntity::userName.name, user.emailAddress),
+                    Updates.set(UserEntity::hashedPassword.name, user.hashedPassword),
+                    Updates.set(UserEntity::lastUsedPasswords.name, user.lastUsedPasswords),
+                    Updates.set(UserEntity::emailAddressVerified.name, user.emailAddressVerified)
+                )
+            ) ?: kotlin.run {
+                return Result.Error(error = DatabaseError.ItemNotFound)
+            }
+            return Result.Success(data = userUpdateResult)
+
+        } catch (e: MongoException) {
+
+            return Result.Error(DatabaseError.OtherError(error = e.message ?: "Mongo Exception Unknown Errro"))
+
+        } catch (e: Exception) {
+            return Result.Error(DatabaseError.OtherError(error = e.message ?: "Unknown Errro"))
+
+        }
+
+
+    }
 }

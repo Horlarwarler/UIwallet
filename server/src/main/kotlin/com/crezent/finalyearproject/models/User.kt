@@ -1,5 +1,6 @@
 package com.crezent.finalyearproject.models
 
+import com.crezent.finalyearproject.data.dto.WalletDto
 import kotlinx.serialization.Serializable
 
 
@@ -8,7 +9,7 @@ data class User(
     val id: String,
     val userName: String,
     val matricNumber: String,
-    val wallet: Wallet?,
+    val walletDto: WalletDto?,
     val gender: Gender,
     val phoneNumberString: String,
     val emailAddress: String,
@@ -18,7 +19,7 @@ data class User(
     val hashedPassword: String ?,
     val salt: String?,
     val lastUsedPasswords: List<String>? = emptyList(),
-    val emailAddressVerified:Boolean ,
+    val emailAddressVerified:Boolean,
     val accountActive: Boolean,
     val accountDeactivationReason: String?
 )

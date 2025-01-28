@@ -1,24 +1,21 @@
 package com.crezent.finalyearproject.data.database.entity
 
-import com.crezent.finalyearproject.models.Card
-import com.crezent.finalyearproject.models.Wallet
-import com.crezent.finalyearproject.transaction.Transaction
+import com.crezent.finalyearproject.data.dto.WalletDto
 import org.bson.codecs.pojo.annotations.BsonId
 import org.bson.types.ObjectId
 
 data class WalletEntity(
     @BsonId
-    val id: ObjectId,
-    val accountBalance: Double,
+    val id: ObjectId = ObjectId(),
+    val accountBalance: Double = 0.0,
     val transactions: List<TransactionEntity> = emptyList(),
-    val connectedCards: List<CardEntity> = emptyList(),
 ) {
-    fun toWallet(): Wallet {
-        return Wallet(
+    fun toWallet(): WalletDto {
+        return WalletDto(
             walletId = id.toString(),
             accountBalance = accountBalance,
-            transactions = transactions.map { it.toTransaction() },
-            connectedCards = connectedCards.map { it.toCard() }
+            transactionDtos = transactions.map { it.toTransaction() },
+            //connectedCards = connectedCards.map { it.toCard() }
         )
     }
 }

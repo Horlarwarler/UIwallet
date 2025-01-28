@@ -13,22 +13,36 @@ interface UIWalletRepository {
     suspend fun getAllUser(): Result<List<User>, DatabaseError>
 
     suspend fun getUserById(
-        matricNumber: String?,
-        objectId: ObjectId?,
+        matricNumber: String? = null,
+        objectId: ObjectId? = null,
         emailAddress: String?
     ): Result<UserEntity, DatabaseError>
 
-    suspend fun addUser(user: UserEntity): Result<BsonValue, DatabaseError>
+    suspend fun addUser(user: UserEntity): Result<String, DatabaseError>
 
     suspend fun deleteUser(objectId: ObjectId): Result<Unit, DatabaseError>
 
-    suspend fun addToken(token: TokenEntity): Result<BsonValue, DatabaseError>
+    suspend fun addToken(token: TokenEntity): Result<String, DatabaseError>
 
     suspend fun removeToken(objectId: ObjectId): Result<Unit, DatabaseError>
 
-    suspend fun getTokenById(token: String, userId: String): Result<TokenEntity, DatabaseError>
+    suspend fun getTokenById(token: String, userId: String?, emailAddress: String?): Result<TokenEntity, DatabaseError>
 
-    suspend fun updateUserEmailVerify(userId: ObjectId, isVerified: Boolean) :  Result<UserEntity, DatabaseError>
+    suspend fun getTokenByEmail(emailAddress: String, purpose: String): Result<TokenEntity, DatabaseError>
+
+    suspend fun updateUserEmailVerify(emailAddress: String, isVerified: Boolean): Result<UserEntity, DatabaseError>
+
+    suspend fun deleteExistingToken(userId: String): Result<Boolean, DatabaseError>
+
+    suspend fun updateUser(user: UserEntity): Result<UserEntity, DatabaseError>
+
+    companion object {
+        const val USER_COLLECTION = "USERS"
+        const val WALLET_COLLECTION = "WALLET"
+        const val TRANSACTION_COLLECTION = "TRANSACTIONS"
+        const val CARD_COLLECTION = "CARDS"
+        const val TOKEN_COLLECTION = "TOKEN"
+    }
 
 
 }

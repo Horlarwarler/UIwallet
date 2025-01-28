@@ -3,7 +3,7 @@ package com.crezent.finalyearproject.transaction
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Transaction(
+data class TransactionDto(
     val transactionId: String,
     val transactionTitle: String,
     val transactionDescription: String,
@@ -12,5 +12,5 @@ data class Transaction(
     val transactionType: TransactionType,
     val transactionDate: String,
     val emailId: String,
-    val fundingSource: FundingSource
+    val fundingSourceDto: FundingSourceDto
 )

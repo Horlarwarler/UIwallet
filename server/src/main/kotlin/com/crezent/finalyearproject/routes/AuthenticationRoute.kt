@@ -1,16 +1,25 @@
 package com.crezent.finalyearproject.routes
 
+import com.crezent.finalyearproject.RESET_PASSWORD_PURPOSE
+import com.crezent.finalyearproject.VERIFY_EMAIL_PURPOSE
 import com.crezent.finalyearproject.data.database.entity.TokenEntity
 import com.crezent.finalyearproject.data.database.entity.UserEntity
 import com.crezent.finalyearproject.data.dto.*
 import com.crezent.finalyearproject.data.repo.UIWalletRepository
 import com.crezent.finalyearproject.domain.util.*
+import com.crezent.finalyearproject.routes.util.decryptVerifiedMessage
+import com.crezent.finalyearproject.routes.util.getEmailFromJwt
 import com.crezent.finalyearproject.services.MailService
 import com.crezent.finalyearproject.utility.security.encryption.EncryptService
 import com.crezent.finalyearproject.utility.security.encryption.SigningService
 import com.crezent.finalyearproject.utility.security.hashing.HashingService
 import com.crezent.finalyearproject.utility.security.hashing.SaltedHash
+import com.crezent.finalyearproject.utility.security.token.TokenClaim
+import com.crezent.finalyearproject.utility.security.token.TokenConfig
+import com.crezent.finalyearproject.utility.security.token.TokenService
 import io.ktor.http.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -24,26 +33,27 @@ fun Route.singIn(
     rsaPrivateKeyString: String, // Use for decrypting value
     signingService: SigningService,
     encryptService: EncryptService,
-    uiWalletRepository: UIWalletRepository,
     hashingService: HashingService,
-    serverEcPublicKey: String,
-    serverRsaPublicKey: String
+    tokenService: TokenService,
+    uiWalletRepository: UIWalletRepository,
+    audience: String,
+    secret: String,
+    issuer: String
 
 ) {
     post("login") {
 
-
         val decryptVerifiedMessage = call.decryptVerifiedMessage<LoginDetails>(
             rsaPrivateKeyString = rsaPrivateKeyString,
             signingService = signingService,
-            encryptService = encryptService
+            encryptService = encryptService,
+            ecPrivateKeyString = ecPrivateKeyString
         )
 
         if (decryptVerifiedMessage !is Result.Success) {
             return@post
         }
         val loginDetails = decryptVerifiedMessage.data.data
-        val rsaPublicKey = decryptVerifiedMessage.data.rsaPublicKey // Needed for encryption
 
         val userResult = uiWalletRepository.getUserById(
             matricNumber = null,
@@ -76,38 +86,19 @@ fun Route.singIn(
             call.respond(HttpStatusCode.NotFound, message = "Invalid Username or Password")
             return@post
         }
-
-        val userString = Json.encodeToString(user.toLoggedInUser())
-
-
-        val encryptUser = encryptService.encryptData(
-            clientRsapublicKey = rsaPublicKey,
-            value = userString
-        ) ?: run {
-            call.respond(HttpStatusCode.Forbidden, "Unable to get user data, please check the device")
-            return@post
-        }
-
-        val signature = signingService.signData(
-            data = encryptUser.aesEncryptedString,
-            privateKeyString = ecPrivateKeyString
+        val oneDay = 24 * 60L * 60L * 1000L
+        val tokenConfig = TokenConfig(
+            issuer = issuer,
+            audience = audience,
+            secret = secret,
+            expiresAt = oneDay
         )
-
-        //
-        val encryptedModel = EncryptedModel(
-            signature = signature,
-            encryptedData = encryptUser.aesEncryptedString,
-            ecKey = serverEcPublicKey, // server  eckey needed ,
-            rsaKey = serverRsaPublicKey,
-            aesKey = encryptUser.rsaEncryptedKey
+        val usernameClaim = TokenClaim(name = "email", value = loginDetails.emailAddress)
+        val jwtToken = tokenService.generateToken(
+            claims = arrayOf(usernameClaim),
+            config = tokenConfig
         )
-        val serverResponse = ServerResponse(
-            data = encryptedModel,
-        )
-
-        call.respond(HttpStatusCode.OK, serverResponse)
-
-        println("Login Details $loginDetails")
+        call.respond(HttpStatusCode.OK, ServerResponse(data = jwtToken))
 
     }
 }
@@ -132,15 +123,18 @@ fun Route.signUp(
     encryptService: EncryptService,
     uiWalletRepository: UIWalletRepository,
     hashingService: HashingService,
+    ecPrivateKeyString: String
 
 
-    ) {
+) {
     post("sign-up") {
 
         val decryptVerifiedMessage = call.decryptVerifiedMessage<SignUpDetails>(
             rsaPrivateKeyString = rsaPrivateKeyString,
             signingService = signingService,
-            encryptService = encryptService
+            encryptService = encryptService,
+            ecPrivateKeyString = ecPrivateKeyString
+
         )
         if (decryptVerifiedMessage !is Result.Success) {
 
@@ -245,16 +239,16 @@ fun Route.signUp(
 
         println("Finish Adding User")
 
-
         val addedUser = newUserResult as Result.Success
 
-        val regex = Regex("\\w+}")
-        val userId = regex.find(addedUser.data.toString())!!.value.dropLast(1)
+
+        val userId = addedUser.data
         val tokenEntity = TokenEntity(
             userId = userId,
             hashedToken = token,
-            purpose = "Verification",
-            expiresAt = System.currentTimeMillis() + 5L * 60L * 1000L
+            purpose = VERIFY_EMAIL_PURPOSE,
+            expiresAt = System.currentTimeMillis() + 5L * 60L * 1000L,
+            emailAddress = signUpDetails.emailAddress
         )
 
         uiWalletRepository.addToken(token = tokenEntity)
@@ -352,96 +346,196 @@ fun Route.getUser(
     }
 }
 
+fun Route.getAuthenticatedUser(
+    ecPrivateKeyString: String, // Use for signing value
+    signingService: SigningService,
+    encryptService: EncryptService,
+    uiWalletRepository: UIWalletRepository,
+    key:String,
+    serverEcPublicKey: String,
+    serverRsaPublicKey: String
+) {
+    authenticate {
+        post("authenticated-user") {
+            val email = getEmailFromJwt() ?: return@post
+            val userResult = uiWalletRepository.getUserById(emailAddress = email)
+            val rsaPublicKey = call.receiveText()
+
+            if (userResult is Result.Error) {
+                call.respond(
+                    HttpStatusCode.NotFound, message = userResult.error.toErrorMessage()
+                )
+                return@post
+            }
+
+            val user = (userResult as Result.Success).data
+
+            val userString = Json.encodeToString(
+                user.toLoggedInUser(
+                    encryptService = encryptService,
+                    key = key
+                )
+            )
+
+
+            val encryptUser = encryptService.encryptData(
+                clientRsapublicKey = rsaPublicKey,
+                value = userString
+            ) ?: run {
+                call.respond(HttpStatusCode.Forbidden, "Unable to get user data, please check the device")
+                return@post
+            }
+
+            val signature = signingService.signData(
+                data = encryptUser.aesEncryptedString,
+                privateKeyString = ecPrivateKeyString
+            )
+
+            val encryptedModel = EncryptedModel(
+                signature = signature,
+                encryptedData = encryptUser.aesEncryptedString,
+                ecKey = serverEcPublicKey, // server  eckey needed ,
+                rsaKey = serverRsaPublicKey,
+                aesKey = encryptUser.rsaEncryptedKey
+            )
+            val serverResponse = ServerResponse(
+                data = encryptedModel,
+            )
+
+            call.respond(HttpStatusCode.OK, serverResponse)
+
+        }
+    }
+}
+
 
 fun Route.verifyEmail(
 
     uiWalletRepository: UIWalletRepository,
-) {
-    put("verify-mail") {
 
-        val tokenVerification = call.receive<TokenVerification>()
+    ) {
+    authenticate("otp-jwt") {
+        put("verify-mail") {
+
+
+            //val token = call.queryParameters["token"]
+            val clientRsaPublicKey = call.receiveText()
+
+            val emailAddress = call.principal<JWTPrincipal>()?.payload?.getClaim("email")?.asString()
+
+
+            if (emailAddress == null) {
+                call.respond(HttpStatusCode.NotAcceptable, "User Email is required")
+                return@put
+            }
+            val tokenEntityResult = uiWalletRepository.getTokenByEmail(
+                emailAddress = emailAddress,
+                purpose = VERIFY_EMAIL_PURPOSE
+            )
+
+            val tokenValid = handleTokenValidity(VERIFY_EMAIL_PURPOSE, tokenEntityResult)
+
+            if (!tokenValid) {
+                return@put
+            }
+
+
+            val userUpdateResult = uiWalletRepository.updateUserEmailVerify(
+                isVerified = true,
+                emailAddress = emailAddress
+            )
+            if (userUpdateResult is Result.Error) {
+                println("User Update result ${userUpdateResult.error}")
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    "Issue from our end,please try again"
+                )
+                return@put
+            }
+
+            call.respond(HttpStatusCode.OK, ServerResponse("Email Verified"))
+
+//            val loggedInUser = (userUpdateResult as Result.Success).data.toLoggedInUser(
+//                encryptService = encryptService,
+//                rsaPrivateKeyString = rsaPrivateKeyString
+//            )
+//            val encodeToString = Json.encodeToString(loggedInUser)
+//
+//
+//            val encryptedUser = encryptService.encryptData(
+//                value = encodeToString,
+//                clientRsapublicKey = clientRsaPublicKey
+//            ) ?: run {
+//                call.respond(
+//                    HttpStatusCode.BadRequest,
+//                    "Issue from our end,please try again"
+//                )
+//                return@put
+//            }
+//            val signature = signingService.signData(
+//                data = encryptedUser.aesEncryptedString,
+//                privateKeyString = ecPrivateKeyString
+//            )
+//
+//            val encryptedModel = EncryptedModel(
+//                signature = signature,
+//                encryptedData = encryptedUser.aesEncryptedString,
+//                ecKey = serverEcPublicKey,
+//                rsaKey = serverRsaPublicKey,
+//                aesKey = encryptedUser.rsaEncryptedKey
+//            )
+//
+//            call.respond(HttpStatusCode.OK, message = ServerResponse(data = encryptedModel)) // TO verification only
+
+        }
+
+    }
+}
+
+fun Route.verifyOtp(
+    tokenService: TokenService,
+    uiWalletRepository: UIWalletRepository,
+    audience: String,
+    secret: String,
+    issuer: String
+) {
+    get("verify-otp") {
 
         val token = call.queryParameters["token"]
-        val userId = call.queryParameters["user_id"]
-        if (token == null || userId == null) {
-            call.respond(HttpStatusCode.NotAcceptable, "User ID and token is required")
-            return@put
+
+        val emailAddress = call.queryParameters["email"]
+        val purpose = call.queryParameters["purpose"]
+
+
+        if (token == null || emailAddress == null || purpose == null) {
+            call.respond(HttpStatusCode.NotAcceptable, "Email, token purpose and token is required")
+            return@get
         }
+
 
         val tokenEntityResult = uiWalletRepository.getTokenById(
             token = token,
-            userId = userId
+            userId = null,
+            emailAddress = emailAddress
         )
+        val tokenValid = handleTokenValidity(purpose, tokenEntityResult)
 
-        if (tokenEntityResult is Result.Error) {
-            val errorMessage = tokenEntityResult.error.toErrorMessage()
-            call.respond(HttpStatusCode.NotFound, errorMessage)
-            return@put
+        if (!tokenValid) {
+            return@get
         }
-
-        val tokenEntity = (tokenEntityResult as Result.Success).data
-        val tokenExpired = tokenEntity.expiresAt < System.currentTimeMillis()
-        if (tokenExpired) {
-            call.respond(HttpStatusCode.NotAcceptable, ServerResponse(data = "Token Expired, Please request a new now"))
-            return@put
-        }
-
-
-        val tokenRemoveResult = uiWalletRepository.removeToken(
-            objectId = tokenEntity.id
+        val fiveMinute = 5L * 60L * 1000L
+        val tokenConfig = TokenConfig(
+            issuer = issuer,
+            audience = audience,
+            secret = secret,
+            expiresAt = fiveMinute
         )
-
-        if (tokenRemoveResult is Result.Error) {
-            call.respond(
-                HttpStatusCode.BadRequest,
-                ServerResponse(message = "Issue from our side, please try again", data = null)
-            )
-            return@put
-        }
-
-        val userUpdateResult = uiWalletRepository.updateUserEmailVerify(
-            isVerified = true,
-            userId = ObjectId(tokenVerification.userId)
+        val usernameClaim = TokenClaim(name = "email", value = emailAddress)
+        val jwtToken = tokenService.generateToken(
+            claims = arrayOf(usernameClaim),
+            config = tokenConfig
         )
-        if (userUpdateResult is Result.Error) {
-            call.respond(
-                HttpStatusCode.BadRequest,
-                ServerResponse(message = "Issue from our side, please try again", data = null)
-            )
-            return@put
-        }
-        val user = (userUpdateResult as Result.Success).data.toResponseUser()
-        call.respond(HttpStatusCode.OK, message = ServerResponse(data = user)) // TO verification only
-
-        //val userString = Json.encodeToString(user)
-
-//
-//        val encryptUser = encryptService.encryptData(
-//            publicKeyString = publicKey,
-//            value = userString
-//        ) ?: run {
-//            call.respond(HttpStatusCode.Forbidden, "Unable to get user data, please check the device ")
-//            return@put
-//        }
-//
-//        val signature = signingService.signData(
-//            data = encryptUser,
-//            privateKeyString = serverPrivateKeyString
-//        )
-//
-//        val encryptedModel = EncryptedModel(
-//            signature = signature,
-//            encryptedData = encryptUser,
-//            publicKey = serverPublicKeyString
-//
-//        )
-//        val serverResponse = ServerResponse(
-//            data = encryptedModel,
-//        )
-//
-//        call.respond(HttpStatusCode.OK, serverResponse)
-
-
+        call.respond(HttpStatusCode.OK, ServerResponse(data = jwtToken))
     }
 }
 
@@ -463,7 +557,7 @@ fun Route.sendOtpToken(
             objectId = null
         )
         if (user is Result.Error) {
-            val errorMessage = user.error.toErrorMessage()
+            val errorMessage = user.error.toErrorMessage(errorToType = DatabaseErrorToType.ResetPasswordError)
             call.respond(
                 HttpStatusCode.NotFound, errorMessage
             )
@@ -476,27 +570,131 @@ fun Route.sendOtpToken(
             userEmail = emailAddress,
             token = token
         )
-        println("Token is $token")
+        println("Token is $token , purpose is $purpose")
         if (mailSendResult is Result.Error) {
             call.respond(HttpStatusCode.NotAcceptable, "Unable to send mail to your email address")
             return@get
             //
         }
 
-        val regex = Regex("\\w+}")
         val userId = (user as Result.Success).data.id.toString()
-        //println("Added user $addedUserObjectId")
-        // val userId = regex.find(addedUserObjectId)!!.value.dropLast(1)
 
         val tokenEntity = TokenEntity(
             userId = userId,
             hashedToken = token,
             purpose = purpose,
-            expiresAt = System.currentTimeMillis() + 5L * 60L * 1000L
+            expiresAt = System.currentTimeMillis() + 5L * 60L * 1000L, //5min
+            emailAddress = emailAddress
         )
+        uiWalletRepository.deleteExistingToken(userId = userId)
 
         uiWalletRepository.addToken(token = tokenEntity)
         call.respond(HttpStatusCode.OK, ServerResponse(data = "Otp Code sent to $emailAddress"))
 
     }
+}
+
+
+fun Route.resetPassword(
+    rsaPrivateKeyString: String, // Use for decrypting value
+    signingService: SigningService,
+    encryptService: EncryptService,
+    uiWalletRepository: UIWalletRepository,
+    ecPrivateKeyString: String,
+    hashingService: HashingService,
+) {
+    authenticate("otp-jwt") {
+        put("reset-password") {
+
+            val jwtPrincipal = call.principal<JWTPrincipal>()
+            val emailAddress = jwtPrincipal?.payload?.getClaim("email")?.asString()
+
+            if (emailAddress == null) {
+                call.respond(HttpStatusCode.NotAcceptable, "User Email is required")
+                return@put
+            }
+            val tokenEntityResult = uiWalletRepository.getTokenByEmail(
+                emailAddress = emailAddress,
+                purpose = RESET_PASSWORD_PURPOSE
+            )
+
+
+            val tokenValid = handleTokenValidity(RESET_PASSWORD_PURPOSE, tokenEntityResult)
+
+            if (!tokenValid) {
+                return@put
+            }
+
+            val decryptVerifiedMessage = call.decryptVerifiedMessage<ResetPassword>(
+                rsaPrivateKeyString = rsaPrivateKeyString,
+                signingService = signingService,
+                encryptService = encryptService,
+                ecPrivateKeyString = ecPrivateKeyString
+            )
+
+
+            if (decryptVerifiedMessage !is Result.Success) {
+                return@put
+            }
+
+            val userResult = uiWalletRepository.getUserById(
+                matricNumber = null,
+                emailAddress = emailAddress,
+                objectId = null
+            )
+
+            if (userResult is Result.Error) {
+                call.respond(HttpStatusCode.NotFound, message = userResult.error.toErrorMessage())
+                return@put
+            }
+
+            val user = (userResult as Result.Success).data
+
+            val existingPasswords = user.lastUsedPasswords.toSet()
+            val hashedPassword = hashingService.hashValue(value = decryptVerifiedMessage.data.data.password)
+            if (existingPasswords.contains(hashedPassword.hashedValue) || user.hashedPassword == hashedPassword.hashedValue) {
+                call.respond(HttpStatusCode.NotModified, "You can't use already existing password")
+                return@put
+            }
+            val newLastPassword = existingPasswords.toMutableList()
+            newLastPassword.addLast(hashedPassword.hashedValue)
+            val editedUser = user.copy(
+                hashedPassword = hashedPassword.hashedValue,
+                lastUsedPasswords = newLastPassword
+            )
+
+            val result = uiWalletRepository.updateUser(editedUser)
+            if (result is Result.Error) {
+                call.respond(HttpStatusCode.NotModified, "Error updating user")
+                return@put
+            }
+            call.respond(HttpStatusCode.OK, ServerResponse(data = "Password Changed Successfully"))
+
+        }
+
+    }
+
+}
+
+suspend fun RoutingContext.handleTokenValidity(
+    purpose: String,
+    tokenEntityResult: Result<TokenEntity, DatabaseError>,
+): Boolean {
+    if (tokenEntityResult is Result.Error) {
+        val errorMessage = tokenEntityResult.error.toErrorMessage(errorToType = DatabaseErrorToType.TokenError)
+        call.respond(HttpStatusCode.NotFound, errorMessage)
+        return false
+    }
+
+    val tokenEntity = (tokenEntityResult as Result.Success).data
+    val tokenExpired = tokenEntity.expiresAt < System.currentTimeMillis()
+    if (tokenExpired) {
+        call.respond(HttpStatusCode.Gone, "Token Expired, Please request a new now")
+        return false
+    }
+    if (purpose != tokenEntity.purpose) {
+        call.respond(HttpStatusCode.NotAcceptable, "Token not valid, Please request a new now")
+        return false
+    }
+    return true
 }

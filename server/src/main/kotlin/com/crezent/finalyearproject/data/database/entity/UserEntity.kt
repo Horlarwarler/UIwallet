@@ -3,7 +3,7 @@ package com.crezent.finalyearproject.data.database.entity
 import com.crezent.finalyearproject.data.dto.LoggedInUser
 import com.crezent.finalyearproject.models.Gender
 import com.crezent.finalyearproject.models.User
-import com.crezent.finalyearproject.models.Wallet
+import com.crezent.finalyearproject.utility.security.encryption.EncryptService
 import org.bson.codecs.pojo.annotations.BsonId
 import org.bson.types.ObjectId
 
@@ -23,16 +23,17 @@ data class UserEntity(
     val hashedPassword: String,
     val lastUsedPasswords: List<String> = emptyList(),
     val accountStatus: String = "active",
-    val accountDeactivationReason: String? = null
+    val accountDeactivationReason: String? = null,
+    val connectedCards: List<CardEntity> = emptyList(),
 
-) {
+    ) {
 
     fun toUser(): User {
         return User(
             id = id.toString(),
             userName = userName,
             matricNumber = matricNumber,
-            wallet = wallet?.toWallet(),
+            walletDto = wallet?.toWallet(),
             gender = gender.toGender(),
             phoneNumberString = phoneNumberString,
             emailAddress = emailAddress,
@@ -54,7 +55,7 @@ data class UserEntity(
             id = id.toString(),
             userName = userName,
             matricNumber = matricNumber,
-            wallet = null,
+            walletDto = null,
             gender = gender.toGender(),
             phoneNumberString = phoneNumberString,
             emailAddress = emailAddress,
@@ -65,13 +66,15 @@ data class UserEntity(
             salt = null,
             lastUsedPasswords = null,
             emailAddressVerified = emailAddressVerified == "true",
-
             accountActive = accountStatus == "active",
             accountDeactivationReason = accountDeactivationReason
         )
     }
 
-    fun toLoggedInUser(): LoggedInUser {
+    fun toLoggedInUser(
+        encryptService: EncryptService,
+        key: String
+    ): LoggedInUser {
         return LoggedInUser(
             id = id.toString(),
             matricNumber = matricNumber,
@@ -82,7 +85,14 @@ data class UserEntity(
             middleName = middleName,
             emailAddressVerified = emailAddressVerified == "true",
             accountActive = accountStatus == "active",
-            accountDeactivationReason = accountDeactivationReason
+            accountDeactivationReason = accountDeactivationReason,
+            connectedCards = connectedCards.map {
+                it.toCardResponse(
+                    encryptService = encryptService,
+                    key = key,
+                )
+            },
+            walletDto = wallet?.toWallet()
         )
     }
 

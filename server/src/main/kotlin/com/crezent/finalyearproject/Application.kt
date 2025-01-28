@@ -1,5 +1,6 @@
 package com.crezent.finalyearproject
 
+import com.crezent.finalyearproject.plugins.configureAuthentication
 import com.crezent.finalyearproject.plugins.configureContentNegotiation
 import com.crezent.finalyearproject.plugins.configureKoin
 import com.crezent.finalyearproject.plugins.configureRoute
@@ -14,13 +15,16 @@ import java.security.interfaces.ECPublicKey
 
 const val samsungHost = "192.168.47.175"
 const val iphoneHost = "172.20.10.12"
-fun main() {
-    embeddedServer(Netty, port = SERVER_PORT, host = iphoneHost, module = Application::module)
-        .start(wait = true)
-}
+//fun main() {
+//    embeddedServer(Netty, port = SERVER_PORT, host = samsungHost, module = Application::module)
+//        .start(wait = true)
+//}
+fun main(args: Array<String>): Unit = EngineMain.main(args)
+
 
 fun Application.module() {
     configureKoin()
+    configureAuthentication()
     configureContentNegotiation()
     configureRoute()
 

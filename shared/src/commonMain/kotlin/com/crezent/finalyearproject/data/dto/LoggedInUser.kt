@@ -11,7 +11,9 @@ data class LoggedInUser(
     val firstName: String,
     val lastName: String,
     val middleName: String? = null,
-    val emailAddressVerified:Boolean ,
+    val emailAddressVerified: Boolean,
     val accountActive: Boolean,
-    val accountDeactivationReason: String?
+    val accountDeactivationReason: String?,
+    val walletDto: WalletDto?,
+    val connectedCards: List<CardResponse>
 )

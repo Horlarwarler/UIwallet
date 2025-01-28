@@ -1,4 +1,4 @@
-package com.crezent.finalyearproject.routes
+package com.crezent.finalyearproject.routes.util
 
 import com.crezent.finalyearproject.data.dto.EncryptedModel
 import com.crezent.finalyearproject.domain.util.*
@@ -13,9 +13,10 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 suspend inline fun <reified T> ApplicationCall.decryptVerifiedMessage(
-    rsaPrivateKeyString: String, // Use for decrypting value
+    rsaPrivateKeyString: String, // Use for decrypting value for android
     signingService: SigningService,
-    encryptService: EncryptService
+    encryptService: EncryptService,
+    ecPrivateKeyString :String
 ): Result<PubicKeyWithDecrypted<T>, RemoteError> {
     return try {
         val encryptedDataReceive = receive<EncryptedModel>()
@@ -24,13 +25,14 @@ suspend inline fun <reified T> ApplicationCall.decryptVerifiedMessage(
         val encryptedData = encryptedDataReceive.encryptedData
         val clientPublicEcKey = encryptedDataReceive.ecKey
         val aesKey = encryptedDataReceive.aesKey
-
-
+        println("Reached Here ")
         val isVerified = signingService.verifySignature(
             signatureString = signature,
             data = encryptedData,
             ecPublicKeyString = clientPublicEcKey
         )
+        println("After verify Reached Here ")
+
 
         if (!isVerified) {
             respond(status = HttpStatusCode.BadRequest, message = "Please check your device ")
@@ -39,14 +41,15 @@ suspend inline fun <reified T> ApplicationCall.decryptVerifiedMessage(
 
         val decryptedMessage = encryptService.decryptData(
             aesEncryptedString = encryptedData,
-            privateKeyString = rsaPrivateKeyString,
-            rsaEncryptedKey = aesKey
+            rsaPrivateKeyString = rsaPrivateKeyString,
+            rsaEncryptedKey = aesKey,
         ) ?: run {
             respond(status = HttpStatusCode.BadRequest, message = "Bad body attached")
             return Result.Error(error = RemoteError.EncryptDecryptError)
         }
 
         val decodedData = Json.decodeFromString<T>(decryptedMessage)
+
         println("DATA IS $decodedData")
 
         Result.Success(
