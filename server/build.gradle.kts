@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.ktor)
     alias(libs.plugins.kotlin.plugin.serialization)
-
     application
 }
 
@@ -10,7 +9,7 @@ group = "com.crezent.finalyearproject"
 version = "1.0.0"
 application {
     mainClass.set("com.crezent.finalyearproject.ApplicationKt")
-    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=${extra["io.ktor.development"] ?: "false"}")
+    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=true")
 }
 
 dependencies {

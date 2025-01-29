@@ -1,10 +1,16 @@
-FROM gradle:7-jdk11 AS build
-COPY --chown=gradle:gradle . /home/gradle/src
-WORKDIR /home/gradle/src
-RUN  gradle buildFatJar --no-daemon
+# Use a lightweight Java runtime environment
+FROM amazoncorretto:22 AS runtime
 
-FROM openjdk:11
+# Set working directory
+WORKDIR /app
+
+# Expose the server port
 EXPOSE 8080:8080
-RUN mkdir /app
-COPY --from=build /home/gradle/src/build/libs/*.jar /app/server-1.0.0.jar
-ENTRYPOINT ["java", "-jar", "/app/server-1.0.0.jar"]
+
+# Copy the manually built fat JAR into the container
+COPY build/libs/*.jar /app/server-all.jar
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "/app/server-all.jar"]
+
+
