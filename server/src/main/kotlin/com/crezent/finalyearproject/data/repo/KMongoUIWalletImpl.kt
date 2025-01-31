@@ -203,10 +203,10 @@ class KMongoUIWalletImpl(
         }
     }
 
-    override suspend fun deleteExistingToken(userId: String): Result<Boolean, DatabaseError> {
+    override suspend fun deleteExistingToken(email: String): Result<Boolean, DatabaseError> {
         try {
             val tokenResult = tokenCollection.deleteMany(
-                filter = Filters.eq("userId", userId)
+                filter = Filters.eq(UserEntity::emailAddress.name, email)
             )
             return Result.Success(tokenResult.wasAcknowledged())
         } catch (e: MongoException) {

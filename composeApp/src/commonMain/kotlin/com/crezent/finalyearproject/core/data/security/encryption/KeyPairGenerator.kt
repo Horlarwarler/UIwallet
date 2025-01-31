@@ -1,6 +1,7 @@
 package com.crezent.finalyearproject.core.data.security.encryption
 
-expect object KeyPairGenerator {
+typealias KeyGenerator = KeyPairGenerator
+interface KeyPairGenerator {
 
     fun generateKeyStore()
 

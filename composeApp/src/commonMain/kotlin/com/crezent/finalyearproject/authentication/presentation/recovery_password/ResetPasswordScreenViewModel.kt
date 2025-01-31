@@ -2,18 +2,24 @@ package com.crezent.finalyearproject.authentication.presentation.recovery_passwo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.crezent.finalyearproject.authentication.data.repo.AuthenticationRepoImpl
+import com.crezent.finalyearproject.domain.util.RemoteError
+import com.crezent.finalyearproject.domain.util.Result
 import com.crezent.finalyearproject.domain.util.ValidationUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 
-class ResetPasswordScreenViewModel : ViewModel() {
-    val channel: Channel<ResetPasswordEvent> = Channel()
+class ResetPasswordScreenViewModel(
+    private val authenticationRepoImpl: AuthenticationRepoImpl
+) : ViewModel() {
+    private val _channel: Channel<ResetPasswordEvent> = Channel()
+    val channel = _channel.receiveAsFlow()
 
     private val _resetPasswordScreenState = MutableStateFlow(ResetPasswordScreenState())
     val recoveryScreenState = _resetPasswordScreenState.asStateFlow()
@@ -82,19 +88,23 @@ class ResetPasswordScreenViewModel : ViewModel() {
     private fun changePassword() {
 
         viewModelScope.launch(Dispatchers.IO) {
+            _resetPasswordScreenState.value = recoveryScreenState.value.copy(isLoading = true)
 
-            channel.send(ResetPasswordEvent.Loading)
+            val result = authenticationRepoImpl.resetPassword(recoveryScreenState.value.password)
 
+            _resetPasswordScreenState.value = recoveryScreenState.value.copy(isLoading = false)
 
-//            _resetPasswordScreenState.value = recoveryScreenState.value.copy(isLoading = true)
-//
-            delay(3000)
+            if (result is Result.Success) {
+                _channel.send(ResetPasswordEvent.RecoverySuccessful)
+                return@launch
+            }
+            val error = result as Result.Error
 
-            //Netwok request
+            _channel.send(ResetPasswordEvent.RecoveryError(error.error))
 
-            channel.send(ResetPasswordEvent.RecoverySuccessful)
-
-            delay(3000)
+            if (error.error is RemoteError.UnAuthorised) {
+                _channel.send(ResetPasswordEvent.UnAuthorised)
+            }
 
 
         }

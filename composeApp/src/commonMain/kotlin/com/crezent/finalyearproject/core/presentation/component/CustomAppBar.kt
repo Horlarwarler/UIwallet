@@ -47,6 +47,8 @@ fun CustomAppBar(
 
         topText?.let {
             Text(
+                modifier = Modifier
+                    .align(Alignment.TopCenter),
                 text = it,
                 color = black,
                 fontFamily = NunitoFontFamily(),

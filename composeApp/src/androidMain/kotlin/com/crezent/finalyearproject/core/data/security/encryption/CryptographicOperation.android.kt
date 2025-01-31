@@ -8,7 +8,7 @@ import com.crezent.finalyearproject.ANDROID_KEY_STORE
 import com.crezent.finalyearproject.EC_ALIAS
 import com.crezent.finalyearproject.RSA_ALIAS
 import com.crezent.finalyearproject.SIGNATURE_ALGORITHM
-import com.crezent.finalyearproject.TRANSFORMATION
+import com.crezent.finalyearproject.RSA_TRANSFORMATION
 import com.crezent.finalyearproject.core.data.util.JavaBase64Util
 import com.crezent.finalyearproject.models.EncryptionKeyValue
 import java.security.KeyFactory
@@ -26,7 +26,7 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 
-actual object CryptographicOperation {
+class AndroidCryptographicOperation : CryptographicOperation {
 
     val base64Util = JavaBase64Util()
 
@@ -46,7 +46,7 @@ actual object CryptographicOperation {
 
 
     @RequiresApi(Build.VERSION_CODES.O)
-    actual fun encryptData(serverPublicKey: String, data: String): EncryptionKeyValue {
+    override fun encryptData(serverPublicKey: String, data: String): EncryptionKeyValue {
 
 
         val publicKey = decodePublicKey(serverPublicKey, KeyProperties.KEY_ALGORITHM_RSA)
@@ -56,8 +56,7 @@ actual object CryptographicOperation {
 
         val aesCipher = Cipher.getInstance(AES_TRANSFORMATION)
         aesCipher.init(Cipher.ENCRYPT_MODE, aesPublicKey)
-        //val aesEncryptedValue = aesCipher.doFinal(data.toByteArray())
-        // val aesEncrypted = Base64.getEncoder().encodeToString(aesEncryptedValue)
+
         val iv = aesCipher.iv
         val aesEncryptedValue = aesCipher.doFinal(data.toByteArray())
         println(aesEncryptedValue)
@@ -67,7 +66,7 @@ actual object CryptographicOperation {
 
         // println("AES $aesEncrypted")
 
-        val cipher = Cipher.getInstance(TRANSFORMATION)
+        val cipher = Cipher.getInstance(RSA_TRANSFORMATION)
 
         cipher.init(Cipher.PUBLIC_KEY, publicKey)
         println("Cipher initialized successfully")
@@ -89,8 +88,8 @@ actual object CryptographicOperation {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    actual fun decryptData(encryptedData: String, encryptedAesKey: String): String {
-        val cipher = Cipher.getInstance(TRANSFORMATION)
+    override fun decryptData(encryptedData: String, encryptedAesKey: String): String {
+        val cipher = Cipher.getInstance(RSA_TRANSFORMATION)
         val privateKey = rsaKeyEntry?.privateKey
 
         cipher.init(Cipher.DECRYPT_MODE, privateKey)
@@ -118,8 +117,7 @@ actual object CryptographicOperation {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    @OptIn(ExperimentalEncodingApi::class)
-    actual fun signData(dataToSign: String): String {
+    override fun signData(dataToSign: String): String {
         try {
 
             val signature = Signature.getInstance(SIGNATURE_ALGORITHM)
@@ -135,7 +133,7 @@ actual object CryptographicOperation {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    actual fun verifySignature(
+    override fun verifySignature(
         signature: String,
         dataToVerify: String,
         publicKey: String

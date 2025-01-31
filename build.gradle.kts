@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.kotlinJvm) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlin.plugin.serialization) apply false
-    alias(libs.plugins.swiftklib)
+    id("org.jetbrains.kotlin.native.cocoapods") version "2.1.0"
+
+    // alias(libs.plugins.swiftklib)
 
 }

@@ -32,7 +32,7 @@ interface UIWalletRepository {
 
     suspend fun updateUserEmailVerify(emailAddress: String, isVerified: Boolean): Result<UserEntity, DatabaseError>
 
-    suspend fun deleteExistingToken(userId: String): Result<Boolean, DatabaseError>
+    suspend fun deleteExistingToken(email: String): Result<Boolean, DatabaseError>
 
     suspend fun updateUser(user: UserEntity): Result<UserEntity, DatabaseError>
 

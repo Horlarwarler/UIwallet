@@ -1,6 +1,15 @@
 {
-  "originHash" : "6b3386dc9ff1f3a74f1534de9c41d47137eae0901cfe819ed442f1b241549359",
+  "originHash" : "57312610410e216cf70e027d6e5d8d4fa33a179bbfe71afe03171a4905a5fa8d",
   "pins" : [
+    {
+      "identity" : "asn1decoder",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/filom/ASN1Decoder",
+      "state" : {
+        "revision" : "7e1523662c69d019a3299bbfb22fb824141dd1f6",
+        "version" : "1.10.0"
+      }
+    },
     {
       "identity" : "lottie-spm",
       "kind" : "remoteSourceControl",

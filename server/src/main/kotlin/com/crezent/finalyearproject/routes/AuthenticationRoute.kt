@@ -10,6 +10,10 @@ import com.crezent.finalyearproject.domain.util.*
 import com.crezent.finalyearproject.routes.util.decryptVerifiedMessage
 import com.crezent.finalyearproject.routes.util.getEmailFromJwt
 import com.crezent.finalyearproject.services.MailService
+import com.crezent.finalyearproject.utility.Constant.RESET_PASSWORD_SUBJECT
+import com.crezent.finalyearproject.utility.Constant.RESET_PASSWORD_TEMPLATE_ID
+import com.crezent.finalyearproject.utility.Constant.VERIFY_EMAIL_SUBJECT
+import com.crezent.finalyearproject.utility.Constant.VERIFY_EMAIL_TEMPLATE_ID
 import com.crezent.finalyearproject.utility.security.encryption.EncryptService
 import com.crezent.finalyearproject.utility.security.encryption.SigningService
 import com.crezent.finalyearproject.utility.security.hashing.HashingService
@@ -17,6 +21,7 @@ import com.crezent.finalyearproject.utility.security.hashing.SaltedHash
 import com.crezent.finalyearproject.utility.security.token.TokenClaim
 import com.crezent.finalyearproject.utility.security.token.TokenConfig
 import com.crezent.finalyearproject.utility.security.token.TokenService
+import io.ktor.client.*
 import io.ktor.http.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -123,6 +128,10 @@ fun Route.signUp(
     encryptService: EncryptService,
     uiWalletRepository: UIWalletRepository,
     hashingService: HashingService,
+    senderEmail: String,
+    client: HttpClient,
+    mailerToken: String,
+    baseUrl: String,
     ecPrivateKeyString: String
 
 
@@ -196,7 +205,14 @@ fun Route.signUp(
 
         val mailSendResult = MailService.sendVerificationToken(
             userEmail = signUpDetails.emailAddress,
-            token = token
+            token = token,
+            senderEmail = senderEmail,
+            mailerToken = mailerToken,
+            templateId = VERIFY_EMAIL_TEMPLATE_ID,
+            subject = VERIFY_EMAIL_SUBJECT,
+            client = client,
+            baseUrl = baseUrl,
+            userFirstName = signUpDetails.firstName
         )
         if (mailSendResult is Result.Error) {
             call.respond(HttpStatusCode.NotAcceptable, "Unable to send mail to your email address")
@@ -233,6 +249,7 @@ fun Route.signUp(
 
 
         if (newUserResult is Result.Error) {
+            uiWalletRepository.deleteExistingToken(email = signUpDetails.emailAddress)
             call.respond(HttpStatusCode.NotImplemented, "Error Creating Account")
             return@post
         }
@@ -351,7 +368,7 @@ fun Route.getAuthenticatedUser(
     signingService: SigningService,
     encryptService: EncryptService,
     uiWalletRepository: UIWalletRepository,
-    key:String,
+    key: String,
     serverEcPublicKey: String,
     serverRsaPublicKey: String
 ) {
@@ -410,16 +427,15 @@ fun Route.getAuthenticatedUser(
 
 
 fun Route.verifyEmail(
-
     uiWalletRepository: UIWalletRepository,
-
-    ) {
+    tokenService: TokenService,
+    audience: String,
+    secret: String,
+    issuer: String
+) {
     authenticate("otp-jwt") {
         put("verify-mail") {
 
-
-            //val token = call.queryParameters["token"]
-            val clientRsaPublicKey = call.receiveText()
 
             val emailAddress = call.principal<JWTPrincipal>()?.payload?.getClaim("email")?.asString()
 
@@ -444,6 +460,9 @@ fun Route.verifyEmail(
                 isVerified = true,
                 emailAddress = emailAddress
             )
+            uiWalletRepository.deleteExistingToken(
+                email = emailAddress
+            )
             if (userUpdateResult is Result.Error) {
                 println("User Update result ${userUpdateResult.error}")
                 call.respond(
@@ -452,41 +471,19 @@ fun Route.verifyEmail(
                 )
                 return@put
             }
-
-            call.respond(HttpStatusCode.OK, ServerResponse("Email Verified"))
-
-//            val loggedInUser = (userUpdateResult as Result.Success).data.toLoggedInUser(
-//                encryptService = encryptService,
-//                rsaPrivateKeyString = rsaPrivateKeyString
-//            )
-//            val encodeToString = Json.encodeToString(loggedInUser)
-//
-//
-//            val encryptedUser = encryptService.encryptData(
-//                value = encodeToString,
-//                clientRsapublicKey = clientRsaPublicKey
-//            ) ?: run {
-//                call.respond(
-//                    HttpStatusCode.BadRequest,
-//                    "Issue from our end,please try again"
-//                )
-//                return@put
-//            }
-//            val signature = signingService.signData(
-//                data = encryptedUser.aesEncryptedString,
-//                privateKeyString = ecPrivateKeyString
-//            )
-//
-//            val encryptedModel = EncryptedModel(
-//                signature = signature,
-//                encryptedData = encryptedUser.aesEncryptedString,
-//                ecKey = serverEcPublicKey,
-//                rsaKey = serverRsaPublicKey,
-//                aesKey = encryptedUser.rsaEncryptedKey
-//            )
-//
-//            call.respond(HttpStatusCode.OK, message = ServerResponse(data = encryptedModel)) // TO verification only
-
+            val oneDay = 24 * 60L * 60L * 1000L
+            val tokenConfig = TokenConfig(
+                issuer = issuer,
+                audience = audience,
+                secret = secret,
+                expiresAt = oneDay
+            )
+            val usernameClaim = TokenClaim(name = "email", value = emailAddress)
+            val jwtToken = tokenService.generateToken(
+                claims = arrayOf(usernameClaim),
+                config = tokenConfig
+            )
+            call.respond(HttpStatusCode.OK, ServerResponse(data = jwtToken))
         }
 
     }
@@ -497,8 +494,9 @@ fun Route.verifyOtp(
     uiWalletRepository: UIWalletRepository,
     audience: String,
     secret: String,
-    issuer: String
-) {
+    issuer: String,
+
+    ) {
     get("verify-otp") {
 
         val token = call.queryParameters["token"]
@@ -523,12 +521,12 @@ fun Route.verifyOtp(
         if (!tokenValid) {
             return@get
         }
-        val fiveMinute = 5L * 60L * 1000L
+        val tenMinute = 10L * 60L * 1000L
         val tokenConfig = TokenConfig(
             issuer = issuer,
             audience = audience,
             secret = secret,
-            expiresAt = fiveMinute
+            expiresAt = tenMinute
         )
         val usernameClaim = TokenClaim(name = "email", value = emailAddress)
         val jwtToken = tokenService.generateToken(
@@ -540,7 +538,11 @@ fun Route.verifyOtp(
 }
 
 fun Route.sendOtpToken(
-    uiWalletRepository: UIWalletRepository
+    uiWalletRepository: UIWalletRepository,
+    senderEmail: String,
+    client: HttpClient,
+    mailerToken: String,
+    baseUrl: String,
 ) {
     get("request-otp") {
         val emailAddress = call.queryParameters["email"]
@@ -566,9 +568,26 @@ fun Route.sendOtpToken(
 
         val token = (100000..999999).random().toString()
 
+        val templateId = if (purpose == RESET_PASSWORD_PURPOSE) {
+            RESET_PASSWORD_TEMPLATE_ID
+        } else {
+            VERIFY_EMAIL_TEMPLATE_ID
+        }
+        val subject = if (purpose == RESET_PASSWORD_PURPOSE) {
+            RESET_PASSWORD_SUBJECT
+        } else {
+            VERIFY_EMAIL_SUBJECT
+        }
         val mailSendResult = MailService.sendVerificationToken(
             userEmail = emailAddress,
-            token = token
+            token = token,
+            templateId = templateId,
+            subject = subject,
+            senderEmail = senderEmail,
+            mailerToken = mailerToken,
+            client = client,
+            baseUrl = baseUrl,
+            userFirstName = (user as Result.Success).data.firstName
         )
         println("Token is $token , purpose is $purpose")
         if (mailSendResult is Result.Error) {
@@ -577,16 +596,16 @@ fun Route.sendOtpToken(
             //
         }
 
-        val userId = (user as Result.Success).data.id.toString()
+        val userId = user.data.id.toString()
 
         val tokenEntity = TokenEntity(
             userId = userId,
             hashedToken = token,
             purpose = purpose,
-            expiresAt = System.currentTimeMillis() + 5L * 60L * 1000L, //5min
+            expiresAt = System.currentTimeMillis() + 10L * 60L * 1000L, //5min
             emailAddress = emailAddress
         )
-        uiWalletRepository.deleteExistingToken(userId = userId)
+        uiWalletRepository.deleteExistingToken(email = emailAddress)
 
         uiWalletRepository.addToken(token = tokenEntity)
         call.respond(HttpStatusCode.OK, ServerResponse(data = "Otp Code sent to $emailAddress"))
@@ -652,8 +671,13 @@ fun Route.resetPassword(
 
             val existingPasswords = user.lastUsedPasswords.toSet()
             val hashedPassword = hashingService.hashValue(value = decryptVerifiedMessage.data.data.password)
-            if (existingPasswords.contains(hashedPassword.hashedValue) || user.hashedPassword == hashedPassword.hashedValue) {
-                call.respond(HttpStatusCode.NotModified, "You can't use already existing password")
+            val passwordSame = hashingService.inputIsCorrect(
+                value = decryptVerifiedMessage.data.data.password, saltedHash = SaltedHash(
+                    hashedValue = user.hashedPassword, salt = ""
+                )
+            )
+            if (existingPasswords.contains(hashedPassword.hashedValue) || passwordSame) {
+                call.respond(HttpStatusCode.BadRequest, "You can't use already existing password")
                 return@put
             }
             val newLastPassword = existingPasswords.toMutableList()
@@ -668,6 +692,7 @@ fun Route.resetPassword(
                 call.respond(HttpStatusCode.NotModified, "Error updating user")
                 return@put
             }
+            uiWalletRepository.deleteExistingToken(email = emailAddress)
             call.respond(HttpStatusCode.OK, ServerResponse(data = "Password Changed Successfully"))
 
         }

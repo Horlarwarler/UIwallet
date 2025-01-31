@@ -35,5 +35,37 @@
     <string name="confirm_new_password">Confirm New Password</string>
     <string name="new_password">New Password</string>
     <string name="chose_new_password">Please choose a new password, you can’t use your old password.</string>
+    <string name="request_new_button">New request in: </string>
+    <string name="available_balance">Available Balance</string>
+    <string name="transfer">Transfer</string>
+    <string name="top_up">Top Up</string>
+    <string name="payment">Payment</string>
+    <string name="your_activity"> Your Activity</string>
+    <string name="deposit">Deposit</string>
+    <string name="next">Next</string>
+    <string name="enter_amount">Enter Amount</string>
+    <string name="delete">Delete</string>
+    <string name="payment_methods">Payment Methods</string>
+    <string name="prefer_methods">Prefer Methods</string>
+    <string name="cvv">CVV</string>
+    <string name="credit_debit">Credit &amp; Debit Card</string>
+    <string name="new_card">Add new card</string>
+    <string name="save_pay_with_card">Save and pay via card </string>
+    <string name="ussd_payment">Ussd Payment</string>
+    <string name="payment_from_code">Make payment directly from code</string>
+    <string name="bank_transfer">Bank Transfer</string>
+    <string name="transfer_from_bank">Make transfer from your bank account</string>
+    <string name="verify_cvv">Verify</string>
+    <string name= "holder_name">Holder Name</string>
+    <string name="card_number">Card Number</string>
+    <string name="expiration_date">Expiration Date</string>
+    <string name="save">Save</string>
+    <string name="add_credit_card">Add Credit Card</string>
+    <string name="valid_thru">Valid Thru</string>
+    <string name= "name_place_holder">Enter name here</string>
+    <string name= "card_place_holder">1234 5678 </string>
+    <string name= "expiration_place_holder">Expired Date </string>
+    <string name= "cvv_place_holder">Cvv Code </string>
+
 
 </resources>

@@ -14,7 +14,8 @@ import kotlinx.coroutines.launch
 
 class SplashViewModel(
     private val sharePreference: SharedPreference,
-    private val encryptedSharePreference: EncryptedSharePreference
+    private val encryptedSharePreference: EncryptedSharePreference,
+    private val  keyPairGenerator: KeyPairGenerator
 ) : ViewModel() {
 
     private val _splashScreenState = MutableStateFlow(SplashScreenState())
@@ -32,7 +33,7 @@ class SplashViewModel(
     }
 
     private fun generateKeyPair() {
-        KeyPairGenerator.generateKeyStore()
+        keyPairGenerator.generateKeyStore()
     }
 
 

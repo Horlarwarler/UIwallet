@@ -2,7 +2,7 @@ package com.crezent.finalyearproject.app
 
 import androidx.navigation.NavController
 
-class ScreenNavigation(private val navController: NavController) {
+class ScreenNavigation(val navController: NavController) {
 
 
     val navigateToOnboard: () -> Unit = {
@@ -40,7 +40,7 @@ class ScreenNavigation(private val navController: NavController) {
         }
     }
     val navigateBack: () -> Unit = {
-        navController.navigateUp()
+        navController.popBackStack()
     }
 
     val navigateToForgotPassword: () -> Unit = {
@@ -49,8 +49,9 @@ class ScreenNavigation(private val navController: NavController) {
 
     val navigateToOtpScreen: (
         String, String
-    ) -> Unit = { email, id ->
-        navController.navigate(Route.OtpRoute(emailAddress = email, userId = id))
+    ) -> Unit = { email, purpose ->
+        println("Email address $email and  purpose is $purpose ")
+        navController.navigate(Route.OtpRoute(emailAddress = email, purpose = purpose))
     }
 
     val navigateToResetPassword: () -> Unit = {
@@ -63,6 +64,35 @@ class ScreenNavigation(private val navController: NavController) {
             }
         }
 
+    }
+
+    val navigateToHome: () -> Unit = {
+        val entryList = navController.currentBackStack.value.mapNotNull {
+            it.destination.route
+        }
+        println("Previous screen is $entryList")
+        val lastScreen = entryList.first()
+        //val previousScreen = navController.currentBackStackEntry?.destination?.route
+        navController.navigate(Route.HomeRoute) {
+            lastScreen.let {
+                popUpTo(lastScreen) {
+                    inclusive = true
+                }
+            }
+        }
+    }
+    val navigateToSetting: () -> Unit = {
+        navController.navigate(Route.SettingRoute)
+    }
+    val navigateToTransactionRoute: () -> Unit = {
+        navController.navigate(Route.TransactionGraph)
+    }
+    val navigateToCreditCardRoute: () -> Unit = {
+        navController.navigate(Route.CreditCardRoute)
+    }
+
+    val navigateToPaymentMethod: (String) -> Unit = {
+        navController.navigate(Route.PaymentMethodRoute(it))
     }
 
 }

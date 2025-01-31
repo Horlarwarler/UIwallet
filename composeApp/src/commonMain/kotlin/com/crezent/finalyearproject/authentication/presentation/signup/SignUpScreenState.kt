@@ -15,4 +15,5 @@ data class SignUpScreenState(
     val genderFieldError: List<String> = emptyList(),
     val fullName: String = "",
     val fullNameError: List<String> = emptyList(),
+    val isLoading :Boolean = false
 )

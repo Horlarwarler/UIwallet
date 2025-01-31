@@ -2,6 +2,7 @@ package com.crezent.finalyearproject.authentication.presentation.recovery_passwo
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,12 +37,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.crezent.finalyearproject.app.ScreenNavigation
-import com.crezent.finalyearproject.authentication.presentation.component.AuthenticationInputField
+import com.crezent.finalyearproject.core.presentation.component.CustomInputField
 import com.crezent.finalyearproject.authentication.presentation.component.AuthenticationScreenTitle
 import com.crezent.finalyearproject.core.domain.util.Animations
 import com.crezent.finalyearproject.core.presentation.component.ActionButton
 import com.crezent.finalyearproject.core.presentation.component.AnimationDialog
 import com.crezent.finalyearproject.core.presentation.component.CustomAppBar
+import com.crezent.finalyearproject.core.presentation.util.SnackBarController
+import com.crezent.finalyearproject.core.presentation.util.SnackBarEvent
+import com.crezent.finalyearproject.core.presentation.util.observeFlowAsEvent
+import com.crezent.finalyearproject.domain.util.toErrorMessage
 import com.crezent.finalyearproject.ui.theme.NunitoFontFamily
 import com.crezent.finalyearproject.ui.theme.background
 import com.crezent.finalyearproject.ui.theme.largePadding
@@ -54,7 +60,7 @@ import finalyearproject.composeapp.generated.resources.lock
 import finalyearproject.composeapp.generated.resources.new_password
 import finalyearproject.composeapp.generated.resources.request_otp
 import finalyearproject.composeapp.generated.resources.reset_password
-import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -71,75 +77,87 @@ fun ResetPasswordScreenRoot(
     val viewModel: ResetPasswordScreenViewModel = koinViewModel()
     val state = viewModel.recoveryScreenState.collectAsStateWithLifecycle().value
 
-    var animationJson by remember {
+
+    val scope = rememberCoroutineScope()
+
+    var loadingAnimation by remember {
         mutableStateOf<String?>(null)
     }
 
-    var animationShown by remember {
-        mutableStateOf<ShownAnimation?>(null)
+    var verifiedAnimation by remember {
+        mutableStateOf<String?>(null)
     }
 
-    LaunchedEffect(key1 = animationShown) {
-        if (animationShown == null) {
-            animationJson = null
-            return@LaunchedEffect
+
+    LaunchedEffect(key1 = state.isLoading) {
+        if (loadingAnimation == null) {
+            loadingAnimation = Res.readBytes(Animations.LOADING_CIRCLE).decodeToString()
+
         }
-        animationJson = Res.readBytes(animationShown!!.path).decodeToString()
+
     }
-    LaunchedEffect(Unit) {
-        viewModel.channel.consumeEach { event ->
-            println("Event Happening $event")
-
-            when (event) {
-                is ResetPasswordEvent.RecoveryError -> {
-                    animationShown = ShownAnimation.Error
+    observeFlowAsEvent(
+        flow = viewModel.channel
+    ) { event ->
+        when (event) {
+            is ResetPasswordEvent.RecoveryError -> {
+                scope.launch {
+                    SnackBarController.sendEvent(
+                        snackBarEvent = SnackBarEvent.ShowSnackBar(
+                            message = event.error.toErrorMessage(),
+                        )
+                    )
                 }
+            }
 
-                ResetPasswordEvent.RecoverySuccessful -> {
-                    animationShown = ShownAnimation.Success
-                }
+            ResetPasswordEvent.RecoverySuccessful -> {
+                scope.launch {
 
-                ResetPasswordEvent.Loading -> {
-                    animationShown = ShownAnimation.Loading
+                    verifiedAnimation = Res.readBytes(Animations.SUCCESSFUL).decodeToString()
                 }
+            }
+
+            ResetPasswordEvent.UnAuthorised -> {
+                screenNavigation.navigateToForgotPassword()
             }
         }
     }
-
-
-    if (animationShown == ShownAnimation.Loading && animationJson != null) {
-        AnimationDialog(
-            modifier = Modifier,
-            isPlaying = true,
-            onAnimationCompleted = {
-            },
-            animationJson = animationJson!!,
-            iterations = animationShown!!.iterations,
-            closeDialog = {
-                animationJson = null
-            }
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        ResetPasswordScreen(
+            resetPasswordScreenState = state,
+            onResetPasswordAction = viewModel::handleUserAction,
+            navigateBack = screenNavigation.navigateBack
         )
-    } else if (animationShown == ShownAnimation.Success && animationJson != null) {
-        AnimationDialog(
-            modifier = Modifier,
-            isPlaying = true,
-            onAnimationCompleted = {
-                screenNavigation.navigateToSignIn()
-            },
-            animationJson = animationJson!!,
-            iterations = animationShown!!.iterations,
-            closeDialog = {
-                animationJson = null
-            }
-        )
+        if (state.isLoading && loadingAnimation != null) {
+            AnimationDialog(
+                modifier = Modifier,
+                isPlaying = true,
+                onAnimationCompleted = {
+
+                },
+                animationJson = loadingAnimation!!,
+                iterations = Int.MAX_VALUE,
+                closeDialog = {
+                }
+            )
+        } else if (verifiedAnimation != null) {
+            AnimationDialog(
+                modifier = Modifier,
+                isPlaying = true,
+                onAnimationCompleted = {
+                    screenNavigation.navigateToSignIn()
+                },
+                animationJson = verifiedAnimation!!,
+                iterations = 1,
+                closeDialog = {
+
+                }
+            )
+        }
     }
 
-
-    ResetPasswordScreen(
-        resetPasswordScreenState = state,
-        onResetPasswordAction = viewModel::handleUserAction,
-        navigateBack = screenNavigation.navigateBack
-    )
 
 }
 
@@ -211,7 +229,7 @@ fun ResetPasswordScreen(
             Spacer(
                 modifier = Modifier.height(largePadding)
             )
-            AuthenticationInputField(
+            CustomInputField(
                 modifier = Modifier.imePadding(),
                 leadingIcon = Res.drawable.lock,
 
@@ -237,7 +255,7 @@ fun ResetPasswordScreen(
                 modifier = Modifier.height(largePadding)
             )
 
-            AuthenticationInputField(
+            CustomInputField(
                 modifier = Modifier.imePadding(),
                 leadingIcon = Res.drawable.lock,
 

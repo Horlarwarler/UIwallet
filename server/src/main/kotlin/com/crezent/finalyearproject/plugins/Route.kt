@@ -7,6 +7,7 @@ import com.crezent.finalyearproject.utility.security.encryption.ECBEncryptServic
 import com.crezent.finalyearproject.utility.security.encryption.SigningService
 import com.crezent.finalyearproject.utility.security.hashing.HashingService
 import com.crezent.finalyearproject.utility.security.token.JwtTokenService
+import io.ktor.client.*
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import org.koin.ktor.ext.inject
@@ -31,6 +32,9 @@ fun Application.configureRoute(
     val secret = System.getenv("jwt_secret")!!
     val audience = environment.config.property("jwt.audience").getString()
     val issuer = environment.config.property("jwt.issuer").getString()
+    val senderMail = "ramadan@trial-351ndgwxmkd4zqx8.mlsender.net"
+    val mailerToken = System.getenv("mailer_token")!!
+    val mailerBaseUrl = "https://api.mailersend.com/v1/email"
     // val audience = environment.config.property("jwt.audience")
 
 
@@ -40,6 +44,8 @@ fun Application.configureRoute(
     val uiWalletRepository by inject<UIWalletRepository>()
     val hashingService by inject<HashingService>()
     val paymentRepository by inject<PaymentRepository>()
+
+    val httpClient by inject<HttpClient>()
 
     val jwtTokenService = JwtTokenService()
 
@@ -65,7 +71,11 @@ fun Application.configureRoute(
             uiWalletRepository = uiWalletRepository,
             hashingService = hashingService,
             rsaPrivateKeyString = rsaPrivateKey,
-            ecPrivateKeyString = ecPrivateKey
+            ecPrivateKeyString = ecPrivateKey,
+            senderEmail = senderMail,
+            client = httpClient,
+            mailerToken = mailerToken,
+            baseUrl = mailerBaseUrl
         )
         getUser(
             serverPrivateKeyString = "serverPrivateKey",
@@ -76,13 +86,22 @@ fun Application.configureRoute(
         )
         verifyEmail(
             uiWalletRepository = uiWalletRepository,
+            tokenService = jwtTokenService,
+            audience = audience,
+            secret = secret,
+            issuer = issuer
+
         )
         getApiKey(
             rsaPublicKey = rsaPublicKey,
             ecPublicKey = ecPublicKey
         )
         sendOtpToken(
-            uiWalletRepository = uiWalletRepository
+            uiWalletRepository = uiWalletRepository,
+            senderEmail = senderMail,
+            client = httpClient,
+            mailerToken = mailerToken,
+            baseUrl = mailerBaseUrl
         )
 
         resetPassword(

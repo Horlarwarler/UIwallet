@@ -8,7 +8,7 @@ sealed interface SignInEvent {
 
     data class SignInError(val error: RemoteError) : SignInEvent
 
-    data class VerifyEmail(val email: String, userId:String) : SignInEvent
+    data class VerifyEmail(val email: String, val userId:String) : SignInEvent
 
     data class AccountDisable(val reason: String) : SignInEvent
 

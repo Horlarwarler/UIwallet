@@ -5,6 +5,6 @@ import com.crezent.finalyearproject.app.App
 import com.crezent.finalyearproject.di.initKoin
 
 fun MainViewController() = ComposeUIViewController {
-    initKoin()
+   // initKoin()
     App()
 }

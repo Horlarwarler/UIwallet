@@ -5,12 +5,16 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 
 
-data class SnackBarEvent(
-    val message: String,
-    val snackBarAction: SnackBarAction? = null,
-    val duration: SnackbarDuration = SnackbarDuration.Short,
-    val dismissAction: Boolean = false
-)
+sealed interface SnackBarEvent {
+    data class ShowSnackBar(
+        val message: String,
+        val snackBarAction: SnackBarAction? = null,
+        val duration: SnackbarDuration = SnackbarDuration.Short,
+        val dismissAction: Boolean = false
+    ) : SnackBarEvent
+
+    data object DismissSnackBar : SnackBarEvent
+}
 
 data class SnackBarAction(
     val name: String,

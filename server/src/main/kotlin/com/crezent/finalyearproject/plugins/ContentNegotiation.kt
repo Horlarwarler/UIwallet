@@ -1,5 +1,6 @@
 package com.crezent.finalyearproject.plugins
 
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
@@ -12,7 +13,8 @@ fun Application.configureContentNegotiation() {
                 isLenient = true
                 prettyPrint = true
                 ignoreUnknownKeys = true
-            }
+            },
+            contentType = ContentType.Application.Json
         )
     }
 }

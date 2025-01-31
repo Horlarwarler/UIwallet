@@ -10,7 +10,7 @@ interface AuthenticationRepo {
     suspend fun login(
         emailAddress: String,
         password: String
-    ): Result<LoggedInUser, RemoteError>
+    ): Result<Unit, RemoteError>
 
     suspend fun signUp(
         emailAddress: String,
@@ -21,10 +21,22 @@ interface AuthenticationRepo {
         matricNumber: String
     ): Result<String, RemoteError>
 
-    suspend fun getApiKey(): Result<PublicKey, RemoteError>
 
     suspend fun requestOtp(
         emailAddress: String,
         purpose: String
     ): Result<String, RemoteError>
+
+    suspend fun verifyEmail(
+    ): Result<Unit, RemoteError>
+
+    suspend fun resetPassword(
+        newPassword: String,
+    ): Result<Unit, RemoteError>
+
+    suspend fun verifyOtp(
+        emailAddress: String,
+        purpose: String,
+        otp: String,
+    ): Result<Unit, RemoteError>
 }

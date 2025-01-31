@@ -28,8 +28,7 @@ sealed interface Route {
     data class OtpRoute(
         @SerialName("email")
         val emailAddress: String,
-        @SerialName("user_id")
-        val userId: String
+        val purpose: String
     ) : Route
 
 
@@ -37,7 +36,25 @@ sealed interface Route {
     data object AuthenticationGraph : Route
 
     @Serializable
+    data object TransactionGraph : Route
+
+    @Serializable
+    data object DepositRoute : Route
+
+    @Serializable
     data object ResetPassword : Route
+
+    @Serializable
+    data object SettingRoute : Route
+
+    @Serializable
+    data object HomeRoute : Route
+
+    @Serializable
+    data class PaymentMethodRoute(val amount: String) : Route
+
+    @Serializable
+    data object CreditCardRoute : Route
 
 
 }

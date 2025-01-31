@@ -14,7 +14,7 @@ interface AuthenticationRemote {
         clientEcKey: String,
         clientRsaKey: String,
         aesKey: String
-    ): Result<ServerResponse<EncryptedModel>, RemoteError>
+    ): Result<ServerResponse<String>, RemoteError>
 
     suspend fun signUp(
         encryptedData: String,
@@ -32,25 +32,31 @@ interface AuthenticationRemote {
     ): Result<ServerResponse<String>, RemoteError>
 
 
-    suspend fun verifyEmail(
-        encryptedData: String,
-        signature: String,
-        clientPublicKey: String
-    ): Result<ServerResponse<String>, RemoteError>
-
-
     suspend fun resetPassword(
         encryptedData: String,
         signature: String,
-        clientPublicKey: String
+        clientEcKey: String,
+        clientRsaKey: String,
+        aesKey: String,
+        bearerToken: String
     ): Result<ServerResponse<String>, RemoteError>
 
     suspend fun sendOtp(
         emailAddress: String,
         purpose: String
-    ) : Result<ServerResponse<String>, RemoteError>
+    ): Result<ServerResponse<String>, RemoteError>
 
-    suspend fun getServerPublicKey(): Result<ServerResponse<PublicKey>, RemoteError>
+    suspend fun verifyEmail(
+        bearerToken: String,
+        clientRsaKey: String,
+    ): Result<ServerResponse<String>, RemoteError>
+
+
+    suspend fun verifyOtp(
+        emailAddress: String,
+        otp: String,
+        purpose: String,
+    ): Result<ServerResponse<String>, RemoteError>
 
 
 }

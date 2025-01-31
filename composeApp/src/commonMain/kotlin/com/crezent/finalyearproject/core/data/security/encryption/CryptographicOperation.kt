@@ -2,22 +2,22 @@ package com.crezent.finalyearproject.core.data.security.encryption
 
 import com.crezent.finalyearproject.models.EncryptionKeyValue
 
-expect object CryptographicOperation {
+interface CryptographicOperation {
 
     fun encryptData(
         serverPublicKey: String,
 
         data: String
-    ): EncryptionKeyValue
+    ): EncryptionKeyValue?
 
     fun decryptData(
         encryptedData: String,
         encryptedAesKey: String
-    ): String
+    ): String?
 
     fun signData(
         dataToSign: String
-    ): String
+    ): String?
 
 
     fun verifySignature(

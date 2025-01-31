@@ -47,6 +47,7 @@ suspend inline fun <reified T> responseToResult(
 
         408 -> Result.Error(RemoteError.TimeOutException)
         429 -> Result.Error(RemoteError.TooManyRequest)
+        401 -> Result.Error(RemoteError.UnAuthorised)
         in 500..599 -> Result.Error(RemoteError.ServerError)
         else -> Result.Error(RemoteError.UnKnownError(response.bodyAsText()))
     }

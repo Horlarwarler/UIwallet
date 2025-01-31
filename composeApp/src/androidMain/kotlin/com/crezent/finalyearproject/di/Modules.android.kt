@@ -7,6 +7,10 @@ import androidx.security.crypto.MasterKey
 import androidx.security.crypto.MasterKey.KeyScheme
 import com.crezent.finalyearproject.core.data.preference.RusshwolfEncryPrefImpl
 import com.crezent.finalyearproject.core.data.preference.RusshwolfSharedPrefImpl
+import com.crezent.finalyearproject.core.data.security.encryption.AndroidCryptographicOperation
+import com.crezent.finalyearproject.core.data.security.encryption.AndroidKeyPairGenerator
+import com.crezent.finalyearproject.core.data.security.encryption.CryptographicOperation
+import com.crezent.finalyearproject.core.data.security.encryption.KeyPairGenerator
 import com.crezent.finalyearproject.core.domain.preference.EncryptedSharePreference
 import com.crezent.finalyearproject.core.domain.preference.SharedPreference
 import com.russhwolf.settings.SharedPreferencesSettings
@@ -15,6 +19,8 @@ import io.ktor.client.engine.android.AndroidClientEngine
 import io.ktor.client.engine.android.AndroidEngineConfig
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.singleOf
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 actual val platformModule: Module
@@ -27,6 +33,10 @@ actual val platformModule: Module
             KeyProperties.DIGEST_SHA256
             RusshwolfSharedPrefImpl(settings)
         }
+
+        singleOf(::AndroidKeyPairGenerator).bind<KeyPairGenerator>()
+
+        singleOf(::AndroidCryptographicOperation).bind<CryptographicOperation>()
 
         single<EncryptedSharePreference> {
             val context = androidContext()

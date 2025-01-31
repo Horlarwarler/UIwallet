@@ -17,6 +17,9 @@ dependencies {
     implementation(libs.logback)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.client.core)
+    implementation("io.ktor:ktor-client-cio-jvm:3.0.2")
+    implementation("io.ktor:ktor-client-okhttp-jvm:3.0.2")
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
 
@@ -29,6 +32,10 @@ dependencies {
     implementation(libs.ktor.server.auth.jwt)
     implementation(libs.ktor.server.websockets)
     implementation(libs.koin.ktor)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.logging)
+    implementation(libs.ktor.client.core.jvm)
     implementation(libs.koin.logger.slf4j)
     implementation(libs.mongodb.driver.core)
     implementation(libs.mongodb.driver.sync)
@@ -44,7 +51,7 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
 
 
-    implementation (libs.bcprov.jdk15on)
+    implementation(libs.bcprov.jdk15on)
 
 
     //Authentication

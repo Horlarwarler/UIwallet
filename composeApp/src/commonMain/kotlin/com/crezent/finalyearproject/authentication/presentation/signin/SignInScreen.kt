@@ -39,12 +39,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.crezent.finalyearproject.VERIFY_EMAIL_PURPOSE
 import com.crezent.finalyearproject.app.ScreenNavigation
-import com.crezent.finalyearproject.authentication.presentation.component.AuthenticationInputField
+import com.crezent.finalyearproject.core.presentation.component.CustomInputField
 import com.crezent.finalyearproject.authentication.presentation.component.AuthenticationScreenTitle
 import com.crezent.finalyearproject.authentication.presentation.component.TextButton
 import com.crezent.finalyearproject.core.domain.util.Animations
-import com.crezent.finalyearproject.core.domain.util.Constant
 import com.crezent.finalyearproject.core.presentation.component.ActionButton
 import com.crezent.finalyearproject.core.presentation.component.AnimationDialog
 import com.crezent.finalyearproject.core.presentation.util.SnackBarController
@@ -65,7 +65,6 @@ import finalyearproject.composeapp.generated.resources.login
 import finalyearproject.composeapp.generated.resources.new_to_ui
 import finalyearproject.composeapp.generated.resources.password
 import finalyearproject.composeapp.generated.resources.register
-import io.ktor.util.encodeBase64
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
@@ -91,9 +90,10 @@ fun SignInScreenRoot(
             is SignInEvent.AccountDisable -> Unit // Show dialog
             is SignInEvent.SignInError -> {
                 //   val message= event.error.
+                screenNavigation.navigateToHome()
                 scope.launch {
                     SnackBarController.sendEvent(
-                        snackBarEvent = SnackBarEvent(
+                        snackBarEvent = SnackBarEvent.ShowSnackBar(
                             message = event.error.toErrorMessage(),
                             duration = SnackbarDuration.Long
 
@@ -103,11 +103,12 @@ fun SignInScreenRoot(
                 }
             }//Show snackbar
             SignInEvent.SignInSuccessful -> {
+                screenNavigation.navigateToHome()
                 println("Successful login")
             } /// Navigate to sign home page
             is SignInEvent.VerifyEmail -> {
                 screenNavigation.navigateToOtpScreen(
-                    event.email
+                    event.email, VERIFY_EMAIL_PURPOSE
                 )
             }// Navigate to otp screen
         }
@@ -121,7 +122,7 @@ fun SignInScreenRoot(
 
     Box(
         modifier = Modifier.fillMaxSize()
-    ){
+    ) {
 
 
         SignInScreen(
@@ -206,7 +207,7 @@ fun SignInScreen(
             Spacer(
                 modifier = Modifier.height(mediumPadding)
             )
-            AuthenticationInputField(
+            CustomInputField(
                 leadingIcon = "@",
                 modifier = Modifier,
                 enable = true,
@@ -228,7 +229,7 @@ fun SignInScreen(
                 modifier = Modifier.height(largePadding)
             )
 
-            AuthenticationInputField(
+            CustomInputField(
                 modifier = Modifier,
                 leadingIcon = Res.drawable.lock,
 

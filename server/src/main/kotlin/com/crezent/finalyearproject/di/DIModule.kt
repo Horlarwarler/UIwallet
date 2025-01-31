@@ -8,16 +8,24 @@ import com.crezent.finalyearproject.utility.security.hashing.BcryptHash
 import com.crezent.finalyearproject.utility.security.hashing.HashingService
 import com.mongodb.ConnectionString
 import com.mongodb.MongoClientSettings
-import com.mongodb.kotlin.client.coroutine.MongoClient
-import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.mongodb.ServerApi
 import com.mongodb.ServerApiVersion
+import com.mongodb.kotlin.client.coroutine.MongoClient
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import org.bson.Document
 import org.koin.dsl.module
 
 val serverModule = module {
+    //kO45SH7EdfJfczJT
 
     val password = System.getenv("db_password")
     single<MongoDatabase> {
@@ -32,15 +40,45 @@ val serverModule = module {
             .build()
         // Create a new client and connect to the server
         val client = MongoClient.create(mongoClientSettings)
-        val database = client.getDatabase("wallet")
+        val database = client.getDatabase("Wallet")
+
         database
-//        database.runCommand(Document("ping", 1))
-//        println("Pinged your deployment. You successfully connected to MongoDB!")
+//
 //        MongoClient.create(mongoClientSettings).use { mongoClient ->
 //            val database = mongoClient.getDatabase("admin")
 //
 //        }
-        //  MongoClient.create("mongodb://localhost:27017/").getDatabase("UIWallet")
+        // MongoClient.create("mongodb://localhost:27017/").getDatabase("UIWallet")
+    }
+
+    single<HttpClient> {
+        HttpClient(CIO) {
+            install(Logging) {
+                level = LogLevel.ALL
+            }
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        isLenient = true
+                        prettyPrint = true
+                        ignoreUnknownKeys = true
+                    },
+                    contentType = ContentType.Application.Json
+                )
+            }
+            engine {
+                maxConnectionsCount = 1000
+                endpoint {
+                    // this: EndpointConfig
+                    maxConnectionsPerRoute = 100
+                    pipelineMaxSize = 20
+                    keepAliveTime = 5000
+                    connectTimeout = 5000
+                    connectAttempts = 5
+                }
+            }
+        }
+
     }
 
     single<UIWalletRepository> {

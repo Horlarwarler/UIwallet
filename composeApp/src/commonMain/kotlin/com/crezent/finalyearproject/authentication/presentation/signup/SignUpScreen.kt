@@ -3,6 +3,7 @@ package com.crezent.finalyearproject.authentication.presentation.signup
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,14 +18,18 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -33,12 +38,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.crezent.finalyearproject.VERIFY_EMAIL_PURPOSE
 import com.crezent.finalyearproject.app.ScreenNavigation
-import com.crezent.finalyearproject.authentication.presentation.component.AuthenticationInputField
+import com.crezent.finalyearproject.core.presentation.component.CustomInputField
 import com.crezent.finalyearproject.authentication.presentation.component.AuthenticationScreenTitle
 import com.crezent.finalyearproject.authentication.presentation.component.GenderField
 import com.crezent.finalyearproject.authentication.presentation.component.TextButton
+import com.crezent.finalyearproject.core.domain.util.Animations
 import com.crezent.finalyearproject.core.presentation.component.ActionButton
+import com.crezent.finalyearproject.core.presentation.component.AnimationDialog
+import com.crezent.finalyearproject.core.presentation.util.SnackBarController
+import com.crezent.finalyearproject.core.presentation.util.SnackBarEvent
+import com.crezent.finalyearproject.core.presentation.util.observeFlowAsEvent
+import com.crezent.finalyearproject.domain.util.toErrorMessage
 import com.crezent.finalyearproject.ui.theme.NunitoFontFamily
 import com.crezent.finalyearproject.ui.theme.background
 import com.crezent.finalyearproject.ui.theme.grey
@@ -58,11 +70,14 @@ import finalyearproject.composeapp.generated.resources.password
 import finalyearproject.composeapp.generated.resources.phone_number
 import finalyearproject.composeapp.generated.resources.signup
 import finalyearproject.composeapp.generated.resources.vector
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 
+@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun SignUpScreenRoot(
     screenNavigation: ScreenNavigation,
@@ -71,14 +86,68 @@ fun SignUpScreenRoot(
 
     val viewModel: SignUpViewModel = koinViewModel()
     val state = viewModel.signUpScreenState.collectAsStateWithLifecycle().value
-    SignUpScreen(
-        signUpScreenState = state,
-        onSignUpAction = viewModel::handleUserAction,
-        navigateToSignInScreen = {
-            screenNavigation.navigateToSignIn()
-        },
 
-        )
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val scope = rememberCoroutineScope()
+
+    observeFlowAsEvent(flow = viewModel.channel) { event ->
+        when (event) {
+            is SignUpEvent.ShowError -> {
+                scope.launch {
+                    SnackBarController.sendEvent(
+                        snackBarEvent = SnackBarEvent.ShowSnackBar(
+                            message = event.networkError.toErrorMessage(),
+                        )
+                    )
+                }
+            }
+
+            is SignUpEvent.NavigateToOtp -> {
+                println("Will navigate to otp screen email is ${state.email}")
+                screenNavigation.navigateToOtpScreen(event.email, VERIFY_EMAIL_PURPOSE)
+            }
+
+        }
+    }
+
+    var loadingAnimationJson by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    LaunchedEffect(state.isLoading) {
+        if (state.isLoading && loadingAnimationJson == null) {
+            loadingAnimationJson = Res.readBytes(Animations.LOADING_CIRCLE).decodeToString()
+        }
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        SignUpScreen(
+            signUpScreenState = state,
+            onSignUpAction = viewModel::handleUserAction,
+            navigateToSignInScreen = {
+                screenNavigation.navigateToSignIn()
+            },
+
+            )
+        if (state.isLoading && loadingAnimationJson != null) {
+            AnimationDialog(
+                modifier = Modifier.fillMaxSize(),
+                onAnimationCompleted = {
+
+                },
+                isPlaying = true,
+                iterations = Int.MAX_VALUE,
+                closeDialog = {
+
+                },
+                animationJson = loadingAnimationJson!!
+            )
+        }
+
+    }
+
 }
 
 @Composable
@@ -145,7 +214,7 @@ fun SignUpScreen(
             Spacer(
                 modifier = Modifier.height(mediumPadding)
             )
-            AuthenticationInputField(
+            CustomInputField(
                 leadingIcon = "@",
                 modifier = Modifier,
                 enable = true,
@@ -171,7 +240,7 @@ fun SignUpScreen(
 
 
 
-            AuthenticationInputField(
+            CustomInputField(
                 leadingIcon = Res.drawable.vector,
                 modifier = Modifier,
                 enable = true,
@@ -204,7 +273,7 @@ fun SignUpScreen(
             Spacer(
                 modifier = Modifier.height(mediumPadding)
             )
-            AuthenticationInputField(
+            CustomInputField(
                 modifier = Modifier.imePadding(),
                 leadingIcon = Res.drawable.lock,
 
@@ -230,7 +299,7 @@ fun SignUpScreen(
             Spacer(
                 modifier = Modifier.height(mediumPadding)
             )
-            AuthenticationInputField(
+            CustomInputField(
                 modifier = Modifier.imePadding(),
                 leadingIcon = Res.drawable.lock,
 
@@ -261,7 +330,7 @@ fun SignUpScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
 
-                AuthenticationInputField(
+                CustomInputField(
                     leadingIcon = Res.drawable.phone_number,
                     modifier = Modifier.weight(1f),
                     enable = true,
@@ -281,7 +350,7 @@ fun SignUpScreen(
                     )
                 )
 
-                AuthenticationInputField(
+                CustomInputField(
                     leadingIcon = Res.drawable.vector,
                     modifier = Modifier.weight(1f),
                     enable = true,

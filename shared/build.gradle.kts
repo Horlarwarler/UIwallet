@@ -2,9 +2,11 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.kotlin.plugin.serialization)
+    id("org.jetbrains.kotlin.multiplatform") version "2.1.0"
+    id("com.android.library") version "8.7.3"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
+
+    //alias(libs.plugins.kotlin.plugin.serialization)
 }
 
 kotlin {
@@ -23,7 +25,8 @@ kotlin {
     
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.ktor.serialization.kotlinx.json)
+          //  implementation(libs.ktor.serialization.kotlinx.json)
+            implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.2")
 
             // put your Multiplatform dependencies here
         }

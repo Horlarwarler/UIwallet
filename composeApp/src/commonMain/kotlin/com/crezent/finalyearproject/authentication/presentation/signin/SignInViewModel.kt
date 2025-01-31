@@ -3,6 +3,9 @@ package com.crezent.finalyearproject.authentication.presentation.signin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crezent.finalyearproject.authentication.data.AuthenticationRepo
+import com.crezent.finalyearproject.core.domain.BaseAppRepo
+import com.crezent.finalyearproject.core.presentation.util.SnackBarController
+import com.crezent.finalyearproject.core.presentation.util.SnackBarEvent
 import com.crezent.finalyearproject.domain.util.RemoteError
 import com.crezent.finalyearproject.domain.util.Result
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +21,9 @@ import kotlinx.coroutines.launch
 
 
 class SignInViewModel(
-    private val authenticationRepo: AuthenticationRepo
+    private val authenticationRepo: AuthenticationRepo,
+    private val baseAppRepo: BaseAppRepo
+
 ) : ViewModel() {
     private val _channel: Channel<SignInEvent> = Channel()
 
@@ -51,7 +56,7 @@ class SignInViewModel(
 
     private fun getApiKey() {
         viewModelScope.launch(Dispatchers.IO) {
-            authenticationRepo.getApiKey()
+            baseAppRepo.getApiKey()
         }
     }
 
@@ -66,6 +71,7 @@ class SignInViewModel(
     private fun login() {
         viewModelScope.launch {
             try {
+                SnackBarController.sendEvent(SnackBarEvent.DismissSnackBar)
                 _signInState.value = signInScreenState.value.copy(
                     isLoading = true
                 )
@@ -81,22 +87,22 @@ class SignInViewModel(
                 }
                 val loggedInResult = loginResult as Result.Success
 
-                val deactivationReason = loggedInResult.data.accountDeactivationReason
-                val accountDisable = loggedInResult.data.accountDeactivationReason != null
-
-                if (accountDisable) {
-                    _channel.send(SignInEvent.AccountDisable(deactivationReason!!))
-                    return@launch
-                }
-
-                val emailVerified = loggedInResult.data.emailAddressVerified
-                if (!emailVerified) {
-                    sendOtp(
-                        emailAddress = loggedInResult.data.emailAddress,
-                        userId = loggedInResult.data.id
-                    )
-                    return@launch
-                }
+//                val deactivationReason = loggedInResult.data.accountDeactivationReason
+//                val accountDisable = loggedInResult.data.accountDeactivationReason != null
+//
+//                if (accountDisable) {
+//                    _channel.send(SignInEvent.AccountDisable(deactivationReason!!))
+//                    return@launch
+//                }
+//
+//                val emailVerified = loggedInResult.data.emailAddressVerified
+//                if (!emailVerified) {
+//                    sendOtp(
+//                        emailAddress = loggedInResult.data.emailAddress,
+//                        userId = loggedInResult.data.id
+//                    )
+//                    return@launch
+//                }
                 _channel.send(SignInEvent.SignInSuccessful)
             } catch (e: Error) {
                 _channel.send(

@@ -3,17 +3,21 @@ package com.crezent.finalyearproject.authentication.presentation.signup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crezent.finalyearproject.authentication.data.AuthenticationRepo
+import com.crezent.finalyearproject.domain.util.Result
 import com.crezent.finalyearproject.domain.util.ValidationUtils
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 
 class SignUpViewModel(
     private val authenticationRepo: AuthenticationRepo
 ) : ViewModel() {
-    val channel: Channel<SignUpEvent> = Channel()
+    private val _channel: Channel<SignUpEvent> = Channel()
+    val channel = _channel.receiveAsFlow()
 
     private val _signUpState = MutableStateFlow(SignUpScreenState())
     val signUpScreenState = _signUpState.asStateFlow()
@@ -143,7 +147,9 @@ class SignUpViewModel(
 
     private fun signUp() {
         viewModelScope.launch {
-            authenticationRepo.signUp(
+            _signUpState.value = signUpScreenState.value.copy(isLoading = true)
+            delay(1000)
+            val result = authenticationRepo.signUp(
                 emailAddress = signUpScreenState.value.email,
                 password = signUpScreenState.value.password,
                 fullName = signUpScreenState.value.fullName,
@@ -151,6 +157,17 @@ class SignUpViewModel(
                 phoneNumber = signUpScreenState.value.phoneNumber,
                 matricNumber = signUpScreenState.value.matricNumber
             )
+            _signUpState.value = signUpScreenState.value.copy(isLoading = false)
+
+            println("Email is ${signUpScreenState.value.email}")
+            if (result is Result.Success) {
+                _channel.send(SignUpEvent.NavigateToOtp(email = signUpScreenState.value.email))
+                return@launch
+            }
+            val remoteError = result as Result.Error
+
+            _channel.send(SignUpEvent.ShowError(remoteError.error))
+
         }
     }
 }

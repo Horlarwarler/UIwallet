@@ -20,9 +20,14 @@ import com.crezent.finalyearproject.authentication.presentation.recovery_passwor
 import com.crezent.finalyearproject.authentication.presentation.signin.SignInScreenRoot
 import com.crezent.finalyearproject.authentication.presentation.signup.SignUpScreenRoot
 import com.crezent.finalyearproject.core.presentation.util.SnackBarController
+import com.crezent.finalyearproject.core.presentation.util.SnackBarEvent
 import com.crezent.finalyearproject.core.presentation.util.observeFlowAsEvent
+import com.crezent.finalyearproject.home.presentation.HomeScreenRoot
 import com.crezent.finalyearproject.onboard.presentation.OnboardScreenRoot
 import com.crezent.finalyearproject.splash.presesentation.SplashScreenRoot
+import com.crezent.finalyearproject.transaction.presentation.deposit.DepositScreenRoot
+import com.crezent.finalyearproject.transaction.presentation.new_credit_card.NewCreditCardScreenRoot
+import com.crezent.finalyearproject.transaction.presentation.payment_method.PaymentMethodRoute
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -46,16 +51,19 @@ fun App() {
             key1 = snackbarHostState,
             onEvent = { event ->
                 snackbarHostState.currentSnackbarData?.dismiss()
-                scope.launch {
-                    val result = snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = event.duration,
-                        actionLabel = event.snackBarAction?.name,
-                        withDismissAction = event.dismissAction
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        event.snackBarAction?.action?.let { it() }
+                if (event is SnackBarEvent.ShowSnackBar) {
+                    scope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = event.message,
+                            duration = event.duration,
+                            actionLabel = event.snackBarAction?.name,
+                            withDismissAction = event.dismissAction
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            event.snackBarAction?.action?.let { it() }
+                        }
                     }
+
                 }
 
             }
@@ -124,6 +132,29 @@ fun App() {
                     }
 
 
+                }
+                navigation<Route.TransactionGraph>(
+                    startDestination = Route.DepositRoute
+                ) {
+                    composable<Route.DepositRoute> {
+                        DepositScreenRoot(
+                            screenNavigation = screenNavigation
+                        )
+                    }
+                    composable<Route.PaymentMethodRoute> {
+                        PaymentMethodRoute(
+                            screenNavigation = screenNavigation
+                        )
+                    }
+                    composable<Route.CreditCardRoute> {
+                        NewCreditCardScreenRoot(
+                            screenNavigation = screenNavigation
+                        )
+                    }
+                }
+
+                composable<Route.HomeRoute>() {
+                    HomeScreenRoot(navigation = screenNavigation)
                 }
 
 

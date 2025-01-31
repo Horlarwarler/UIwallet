@@ -7,11 +7,14 @@ import com.crezent.finalyearproject.authentication.data.network.AuthenticationRe
 import com.crezent.finalyearproject.core.data.security.encryption.CryptographicOperation
 import com.crezent.finalyearproject.core.data.security.encryption.KeyPairGenerator
 import com.crezent.finalyearproject.core.data.util.toData
+import com.crezent.finalyearproject.core.domain.BaseAppRepo
 import com.crezent.finalyearproject.core.domain.preference.EncryptedSharePreference
+import com.crezent.finalyearproject.core.domain.preference.EncryptedSharePreference.Companion.OTP_TOKEN
 import com.crezent.finalyearproject.core.domain.preference.SharedPreference
 import com.crezent.finalyearproject.data.dto.LoggedInUser
 import com.crezent.finalyearproject.data.dto.LoginDetails
 import com.crezent.finalyearproject.data.dto.PublicKey
+import com.crezent.finalyearproject.data.dto.ResetPassword
 import com.crezent.finalyearproject.data.dto.SignUpDetails
 import com.crezent.finalyearproject.domain.util.RemoteError
 import com.crezent.finalyearproject.domain.util.Result
@@ -23,13 +26,16 @@ import kotlinx.serialization.json.Json
 class AuthenticationRepoImpl(
     private val encryptedPref: EncryptedSharePreference,
     private val pref: SharedPreference,
-    private val authenticationRemote: AuthenticationRemote
+    private val authenticationRemote: AuthenticationRemote,
+    private val keyPairGenerator: KeyPairGenerator,
+    private val cryptographicOperation: CryptographicOperation,
+    private val baseAppRepo: BaseAppRepo
 ) : AuthenticationRepo {
 
     override suspend fun login(
         emailAddress: String,
         password: String
-    ): Result<LoggedInUser, RemoteError> {
+    ): Result<Unit, RemoteError> {
 
 
         val loginDto = LoginDetails(
@@ -39,24 +45,28 @@ class AuthenticationRepoImpl(
 
         val data = Json.encodeToString(loginDto)
 
-        val apiKey = getLocalSaveApiKey()
+        val apiKey = baseAppRepo.getLocalSaveApiKey()
         if (apiKey is Result.Error) {
             return apiKey
         }
-        val rsaApiKey = (apiKey as Result.Success).data.publicRsaKey
+        val rsaApiKey = (apiKey as Result.Success).data.publicRsaKey // TODO
+
         try {
-            val encryptedData = CryptographicOperation.encryptData(
+            val encryptedData = cryptographicOperation.encryptData(
                 serverPublicKey = rsaApiKey,
                 data = data
             )
-            val signature = CryptographicOperation.signData(
-                dataToSign = encryptedData.aesEncryptedString
-            )
+            val signature = encryptedData?.aesEncryptedString?.let {
+                cryptographicOperation.signData(
+                    dataToSign = it
+                )
+            } ?: return Result.Error(error = RemoteError.EncryptDecryptError)
             // ClientEC for signature
             //ServerRSA for decryption
 
-            val clientEcKey = KeyPairGenerator.getClientKeyPair(EC_ALIAS)
-            val clientRsaKey = KeyPairGenerator.getClientKeyPair(RSA_ALIAS)
+            val clientEcKey = keyPairGenerator.getClientKeyPair(EC_ALIAS)
+            val clientRsaKey = keyPairGenerator.getClientKeyPair(RSA_ALIAS)
+            println("Encrypted Data $encryptedData, Signature is $signature")
 
             return authenticationRemote.login(
                 encryptedData = encryptedData.aesEncryptedString,
@@ -64,11 +74,15 @@ class AuthenticationRepoImpl(
                 clientEcKey = clientEcKey,
                 clientRsaKey = clientRsaKey,
                 aesKey = encryptedData.rsaEncryptedKey
-
             )
-                .map {
-                    it.data!!.toData<LoggedInUser>()!!
+                .onSuccess {
+                    println("token is ${it.data}")
+                    encryptedPref.editAuthToken(it.data!!)
                 }
+                .map {
+
+                }
+
         } catch (e: Exception) {
             e.printStackTrace()
             return Result.Error(RemoteError.ServerError)
@@ -86,7 +100,7 @@ class AuthenticationRepoImpl(
         matricNumber: String
     ): Result<String, RemoteError> {
 
-        val apiKey = getLocalSaveApiKey()
+        val apiKey = baseAppRepo.getLocalSaveApiKey()
         if (apiKey is Result.Error) {
             return apiKey
         }
@@ -123,20 +137,21 @@ class AuthenticationRepoImpl(
 
             val decodedSignUpDetails = Json.encodeToString(signUpDetails)
 
-            val encryptedSignUpDetails = CryptographicOperation.encryptData(
+            val encryptedSignUpDetails = cryptographicOperation.encryptData(
                 serverPublicKey = rsaApiKey,
                 data = decodedSignUpDetails
             )
-            val signature = CryptographicOperation.signData(
-                dataToSign = encryptedSignUpDetails.aesEncryptedString
+            val signature = cryptographicOperation.signData(
+                dataToSign = encryptedSignUpDetails?.aesEncryptedString
+                    ?: return Result.Error(error = RemoteError.EncryptDecryptError)
             )
             // ClientEC for signature
             //ServerRSA for decryption
             return authenticationRemote.signUp(
                 encryptedData = encryptedSignUpDetails.aesEncryptedString,
-                signature = signature,
-                clientEcKey = KeyPairGenerator.getClientKeyPair(EC_ALIAS),
-                clientRsaKey = KeyPairGenerator.getClientKeyPair(RSA_ALIAS),
+                signature = signature!!,
+                clientEcKey = keyPairGenerator.getClientKeyPair(EC_ALIAS),
+                clientRsaKey = keyPairGenerator.getClientKeyPair(RSA_ALIAS),
                 aesKey = encryptedSignUpDetails.rsaEncryptedKey
 
             )
@@ -153,22 +168,6 @@ class AuthenticationRepoImpl(
         }
     }
 
-    override suspend fun getApiKey(): Result<PublicKey, RemoteError> {
-        //MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEarQCbxeSJwdvJULg5gfr/M0SO8uZ 3+QJR1yaFVPgFg8I1uusJMBkvgi6twi5HGnrxRh8YvxH4D2LM39hMTzv5Q==
-        //MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEarQCbxeSJwdvJULg5gfr/M0SO8uZ 3+QJR1yaFVPgFg8I1uusJMBkvgi6twi5HGnrxRh8YvxH4D2LM39hMTzv5Q==
-
-
-        return authenticationRemote
-            .getServerPublicKey()
-            .onSuccess {
-                val apiKey = it.data!!
-                saveApiKey(apiKey)
-            }
-            .map {
-                it.data!!
-            }
-
-    }
 
     override suspend fun requestOtp(
         emailAddress: String,
@@ -184,35 +183,102 @@ class AuthenticationRepoImpl(
                 }
         } catch (e: Exception) {
             e.printStackTrace()
-            return Result.Error(error = RemoteError.UnKnownError(message = e.message?:"Unknown Error"))
+            return Result.Error(
+                error = RemoteError.UnKnownError(
+                    message = e.message ?: "Unknown Error"
+                )
+            )
         }
     }
 
-    suspend fun getLocalSaveApiKey(): Result<PublicKey, RemoteError> {
-        val savedRsa = pref.publicRsaKey
+    override suspend fun verifyEmail(
 
-        val savedEc = pref.publicEcKey
+    ): Result<Unit, RemoteError> {
+        try {
 
-        if (savedEc != null && savedRsa != null) {
-            return Result.Success(data = PublicKey(publicEcKey = savedEc, publicRsaKey = savedRsa))
-        }
-        return getApiKey()
+            val clientRsaKey = keyPairGenerator.getClientKeyPair(RSA_ALIAS)
+            return authenticationRemote.verifyEmail(
+                bearerToken = encryptedPref.otpToken!!,
+                clientRsaKey = clientRsaKey,
+            )
+                .onSuccess {
+                    encryptedPref.editAuthToken(it.data!!)
+                    encryptedPref.deleteKey(OTP_TOKEN)
+                }
+                .map {
 
-    }
-
-    private fun saveApiKey(publicKey: PublicKey) {
-        val existingEcKey = pref.publicEcKey
-        if (publicKey.publicEcKey != existingEcKey) {
-            pref.editPublicEcKey(publicKey.publicEcKey)
-
-        }
-
-        val existingRsaKey = pref.publicRsaKey
-        if (publicKey.publicRsaKey != existingRsaKey) {
-            pref.editPublicRsaKey(publicKey.publicRsaKey)
-
-
+                }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return Result.Error(RemoteError.ServerError)
         }
     }
+
+    override suspend fun verifyOtp(
+        emailAddress: String,
+        purpose: String,
+        otp: String
+    ): Result<Unit, RemoteError> {
+        try {
+
+            return authenticationRemote.verifyOtp(
+                emailAddress = emailAddress,
+                otp = otp,
+                purpose = purpose
+            )
+                .map {
+                    val token = it.data!!
+                    encryptedPref.saveOtpToken(token)
+                }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return Result.Error(RemoteError.ServerError)
+        }
+    }
+
+    override suspend fun resetPassword(newPassword: String): Result<Unit, RemoteError> {
+        try {
+
+
+            val apiKey = baseAppRepo.getLocalSaveApiKey()
+            if (apiKey is Result.Error) {
+                return apiKey
+            }
+            val serverRsaKey = (apiKey as Result.Success).data.publicRsaKey
+            val resetPassword = ResetPassword(password = newPassword)
+            val jsonToString = Json.encodeToString(resetPassword)
+            val encryptedData = cryptographicOperation.encryptData(
+                serverPublicKey = serverRsaKey,
+                data = jsonToString
+            )
+            val signature = encryptedData?.aesEncryptedString?.let {
+                cryptographicOperation.signData(
+                    dataToSign = it
+                )
+            } ?: return Result.Error(error = RemoteError.InvalidSignature)
+            val clientEcKey = keyPairGenerator.getClientKeyPair(EC_ALIAS)
+            val clientRsaKey = keyPairGenerator.getClientKeyPair(RSA_ALIAS)
+
+
+            return authenticationRemote.resetPassword(
+                bearerToken = encryptedPref.otpToken!!,
+                clientRsaKey = clientRsaKey,
+                encryptedData = encryptedData.aesEncryptedString,
+                signature = signature,
+                clientEcKey = clientEcKey,
+                aesKey = encryptedData.rsaEncryptedKey
+            )
+                .map {
+
+                }
+                .onSuccess {
+                    encryptedPref.deleteKey(OTP_TOKEN)
+                }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return Result.Error(RemoteError.ServerError)
+        }
+    }
+
 
 }

@@ -7,7 +7,11 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlin.plugin.serialization)
-    alias(libs.plugins.swiftklib)
+   //  alias(libs.plugins.swiftklib)
+    id("org.jetbrains.kotlin.native.cocoapods") version "2.1.0"
+
+
+
 
 }
 
@@ -25,17 +29,27 @@ kotlin {
         iosSimulatorArm64()
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
-            baseName = "ComposeApp"
+            baseName = "composeApp"
             isStatic = true
         }
-        iosTarget.compilations {
-            val main by getting {
+    }
 
-                cinterops {
-                    create("security")
-                }
-            }
+
+    cocoapods {
+        version = "2.0"
+        name = "MyCocoaPod"
+        summary = "Some description for the Kotlin Multiplatform Module"
+        ios.deploymentTarget = "17.5"
+        homepage = "Link to the project homepage"
+
+        framework {
+            baseName = "composeApp"  // ⚠️ THIS LINE IS VERY IMPORTANT //
+            isStatic = true
         }
+
+
+
+   //   xcodeConfigurationToNativeBuildType["CUSTOM_RELEASE"] = NativeBuildType.RELEASE
     }
 
     sourceSets {
@@ -74,6 +88,7 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.client.auth)
 
             //Koin
             implementation(libs.koin.core)
@@ -133,11 +148,4 @@ android {
 dependencies {
     // implementation(libs.androidx.navigation.compose)
     debugImplementation(compose.uiTooling)
-}
-
-swiftklib {
-    create("security") {
-        path = file("../iosApp/iosApp/security")
-        packageName("com.crezent.security")
-    }
 }
