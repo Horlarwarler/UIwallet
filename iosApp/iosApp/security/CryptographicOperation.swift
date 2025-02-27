@@ -26,38 +26,29 @@ import composeApp
   
     //Mark Encryption
      func encryptData(serverPublicKey: String, data: String) -> SharedEncryptionKeyValue? {
-         
-         
          // Step 1: Generate AES Key
          let randomString = IosKeyPairGenerator().generateRandomString(length: 16) // this will serve as our secret key
          let aesKeyData = Data(randomString.data(using: .utf8)!)
-         
-         print("\(aesKeyData)")
          let aesKey = SymmetricKey(data: aesKeyData)
          
          //Step 2; Cipher data with AES key
          let dataToEncrypt = data.data(using: .utf8)!
-         
          let aesCipher = try! AES.GCM.seal(dataToEncrypt, using: aesKey)
          let tag = aesCipher.tag
          
       ///   AES.GCM.seal(utf8Data, using: aesKey, authenticating: .)
-         ///
          let encryptedData = aesCipher.ciphertext + tag
          let encryptedDataBase64 = encryptedData.base64EncodedString()
          let iv = aesCipher.nonce.withUnsafeBytes { Data($0).base64EncodedString() }
          let aesEncryptedString = "\(encryptedDataBase64):\(iv)"
-         
+
          // Step 3: Code the AES key wht Rsa Public key
-         
          var unManageError: Unmanaged<CFError>?
          let publicKeyData = Data(base64Encoded: serverPublicKey, options: .ignoreUnknownCharacters)!
          guard let secPublicKey = IosKeyPairGenerator().decodePublicKey(data: publicKeyData, error:  &unManageError, type: kSecAttrKeyTypeRSA ) else{
              print("Unable to generate RSA key")
              return nil
          }
-         
-    
          var error: Unmanaged<CFError>?
 
          guard let rsaEncryptedKey = SecKeyCreateEncryptedData(
@@ -142,15 +133,8 @@ import composeApp
              print("Error while decrypting: \(error.localizedDescription)")
              return nil
          }
-         
-         
-    
-         
      }
      func signData(dataToSign: String) -> String? {
-       
-
-         
          let algorithm: SecKeyAlgorithm =   SecKeyAlgorithm.ecdsaSignatureMessageX962SHA256
          
          guard let privateKey = IosKeyPairGenerator().getEcPrivateKey() else {
@@ -169,7 +153,7 @@ import composeApp
          
          var error: Unmanaged<CFError>?
          guard let signature = SecKeyCreateSignature(
-                     privateKey,
+                    privateKey,
                      SecKeyAlgorithm.ecdsaSignatureMessageX962SHA256,
                      dataToSign as CFData,
                      &error
@@ -218,9 +202,7 @@ import composeApp
          return isValid
          
      }
- 
 
-    
     private  func secCall<Result>(_ body: (_ resultPtr: UnsafeMutablePointer<Unmanaged<CFError>?>) -> Result?) throws -> Result {
         var errorQ: Unmanaged<CFError>? = nil
         guard let result = body(&errorQ) else {

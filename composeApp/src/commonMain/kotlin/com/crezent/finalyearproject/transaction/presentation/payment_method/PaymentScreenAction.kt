@@ -14,5 +14,7 @@ sealed interface PaymentScreenAction {
 
     data class SelectPaymentMethod(val paymentMethod: PaymentMethod) : PaymentScreenAction
 
+    data object InitiatePayment : PaymentScreenAction
+
 
 }

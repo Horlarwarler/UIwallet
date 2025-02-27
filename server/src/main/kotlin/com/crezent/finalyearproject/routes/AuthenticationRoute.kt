@@ -280,7 +280,6 @@ fun Route.signUp(
     }
 }
 
-
 //Get User
 
 fun Route.getUser(

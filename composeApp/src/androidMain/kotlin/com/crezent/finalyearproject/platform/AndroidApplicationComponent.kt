@@ -1,6 +1,8 @@
 package com.crezent.finalyearproject.platform
 
-class AndroidApplicationComponent
+
+class AndroidApplicationComponent(
+)
 
 fun application(component: AndroidApplicationComponent) {
 

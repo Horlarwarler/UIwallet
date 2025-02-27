@@ -20,15 +20,10 @@ class AndroidKeyPairGenerator : KeyGenerator {
         load(null)
     }
 
-
     override fun generateKeyStore() {
-
         generateRsaKey()
         generateEcKey()
-
-
     }
-
     private fun generateRsaKey() {
         if (keyStore != null && keyStore.containsAlias(RSA_ALIAS)) {
             // keyStore?.deleteEntry(RSA_ALIAS)

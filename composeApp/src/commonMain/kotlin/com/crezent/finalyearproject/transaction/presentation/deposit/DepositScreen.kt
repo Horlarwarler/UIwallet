@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -24,13 +26,20 @@ import com.crezent.finalyearproject.app.ScreenNavigation
 import com.crezent.finalyearproject.core.presentation.component.ActionButton
 import com.crezent.finalyearproject.core.presentation.component.CustomAppBar
 import com.crezent.finalyearproject.core.presentation.component.NumberInputDialog
+import com.crezent.finalyearproject.core.presentation.component.TopBarLoadingIndicator
+import com.crezent.finalyearproject.core.presentation.util.SnackBarController
+import com.crezent.finalyearproject.core.presentation.util.SnackBarEvent.ShowSnackBar
+import com.crezent.finalyearproject.core.presentation.util.observeFlowAsEvent
+import com.crezent.finalyearproject.domain.util.toErrorMessage
 import com.crezent.finalyearproject.transaction.presentation.deposit.component.AmountInputField
+import com.crezent.finalyearproject.transaction.presentation.payment_method.PaymentMethodEvent
 import com.crezent.finalyearproject.ui.theme.background
 import com.crezent.finalyearproject.ui.theme.largePadding
 import com.crezent.finalyearproject.ui.theme.mediumPadding
 import finalyearproject.composeapp.generated.resources.Res
 import finalyearproject.composeapp.generated.resources.deposit
 import finalyearproject.composeapp.generated.resources.next
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -39,16 +48,46 @@ import org.koin.compose.viewmodel.koinViewModel
 fun DepositScreenRoot(
     screenNavigation: ScreenNavigation
 ) {
-    val viewmodel: DepositScreenViewmodel = koinViewModel()
-    val state = viewmodel.depositScreenState.collectAsStateWithLifecycle().value
-    DepositScreen(
-        depositScreenState = state,
-        action = viewmodel::handleScreenAction,
-        navigateBack = screenNavigation.navigateBack,
-        navigateToPaymentMethod = {
-            screenNavigation.navigateToPaymentMethod(state.depositAmount!!)
+    val viewModel: DepositScreenViewmodel = koinViewModel()
+    val state = viewModel.depositScreenState.collectAsStateWithLifecycle().value
+    val scope = rememberCoroutineScope()
+
+    observeFlowAsEvent(
+        flow = viewModel.depositEventChannel, onEvent = { event ->
+            when (event) {
+                // Show dialog
+                //Show snackbar
+                /// Navigate to sign home page
+
+                is DepositScreenEvent.NavigateToPayStack -> {
+                    screenNavigation.navigateToPaymentMethod(
+                        event.authorizationUrl,
+                        event.reference
+                    )
+                }
+
+                is DepositScreenEvent.ShowError -> {
+                    scope.launch {
+                        SnackBarController.sendEvent(
+                            snackBarEvent = ShowSnackBar(
+                                message = event.error,
+                                duration = SnackbarDuration.Long
+
+                            )
+                        )
+                    }
+
+
+                }
+            }
         }
     )
+    DepositScreen(
+        depositScreenState = state,
+        action = viewModel::handleScreenAction,
+        navigateBack = screenNavigation.navigateBack,
+
+        )
 }
 
 @Composable
@@ -56,7 +95,6 @@ fun DepositScreen(
     depositScreenState: DepositScreenState = DepositScreenState(),
     action: (DepositScreenAction) -> Unit,
     navigateBack: () -> Unit,
-    navigateToPaymentMethod: () -> Unit
 ) {
     var numberInputDialogVisible by remember {
         mutableStateOf(true)
@@ -74,7 +112,7 @@ fun DepositScreen(
 
 
         //   val scrollState = rememberScrollState()
-
+        TopBarLoadingIndicator(isLoading = depositScreenState.isLoading)
         CustomAppBar(
             modifier = Modifier
                 .padding(top = mediumPadding, start = mediumPadding)
@@ -106,7 +144,7 @@ fun DepositScreen(
 
             AmountInputField(
                 currentIndex = depositScreenState.currentIndex,
-                amount = depositScreenState.depositAmount?.toString(),
+                amount = depositScreenState.amount?.toString(),
                 modifier = Modifier,
                 onItemClick = { index ->
                     if (index == null) {
@@ -133,8 +171,8 @@ fun DepositScreen(
 
         )
 
-        val isEnable by remember(depositScreenState.depositAmount) {
-            mutableStateOf(!depositScreenState.depositAmount.isNullOrBlank())
+        val isEnable by remember(depositScreenState.amount) {
+            mutableStateOf(!depositScreenState.amount.isNullOrBlank() && !depositScreenState.isLoading)
         }
 
         AnimatedVisibility(
@@ -149,7 +187,9 @@ fun DepositScreen(
                 height = 50.dp,
                 isEnable = isEnable,
                 shouldEnableClick = true,
-                onClick = navigateToPaymentMethod
+                onClick = {
+                    action(DepositScreenAction.OpenPaymentPage)
+                }
             )
         }
 

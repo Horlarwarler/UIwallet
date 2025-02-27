@@ -20,7 +20,6 @@ object SigningService {
 
     fun signData(data: String, privateKeyString: String): String {
 
-
         val privateKeyByte = org.bouncycastle.util.encoders.Base64.decode(privateKeyString)
         val keyFactory = KeyFactory.getInstance("EC")
         val privateKey = keyFactory.generatePrivate(PKCS8EncodedKeySpec(privateKeyByte))
@@ -34,10 +33,7 @@ object SigningService {
     fun verifySignature(data: String, signatureString: String, ecPublicKeyString: String): Boolean {
         println("Public key $ecPublicKeyString")
         try {
-            //  val publicKeyBytes = Base64.getDecoder().decode(ecPublicKeyString)
-//
             val publicKey = importX509PublicKey(ecPublicKeyString)
-
             val signature = Signature.getInstance("SHA256withECDSA")
             signature.initVerify(publicKey)
             signature.update(data.toByteArray())
@@ -50,18 +46,6 @@ object SigningService {
         return false
     }
 
-//    private fun getPublicKey(
-//        publicKey: String
-//    ): ECPublicKey {
-////        SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo()
-////        val publicKeyBytes = Base64.getDecoder().decode(publicKey)
-////        println(publicKeyBytes)
-////
-
-//
-//    }
-
-
     private fun importX509PublicKey(publicKeyString: String): PublicKey {
         // Decode the Base64-encoded key
         val publicKeyBytes = org.bouncycastle.util.encoders.Base64.decode(publicKeyString)
@@ -72,12 +56,6 @@ object SigningService {
 
     }
 
-
-    private fun getEcParameterSpec(): ECParameterSpec {
-        val params = AlgorithmParameters.getInstance("EC")
-        params.init(ECGenParameterSpec(ELLIPTIC_CURVE_STANDARD_NAME))
-        return params.getParameterSpec(ECParameterSpec::class.java)
-    }
 
 
 }

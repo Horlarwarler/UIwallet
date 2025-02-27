@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.kotlin.plugin.serialization) apply false
     id("org.jetbrains.kotlin.native.cocoapods") version "2.1.0"
 
+
     // alias(libs.plugins.swiftklib)
 
 }

@@ -1,5 +1,6 @@
 package com.crezent.finalyearproject.app
 
+
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -14,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.crezent.finalyearproject.authentication.presentation.forgot_password.ForgotPasswordScreenRoot
 import com.crezent.finalyearproject.authentication.presentation.otp.OtpScreenRoot
 import com.crezent.finalyearproject.authentication.presentation.recovery_password.ResetPasswordScreenRoot
@@ -27,14 +29,17 @@ import com.crezent.finalyearproject.onboard.presentation.OnboardScreenRoot
 import com.crezent.finalyearproject.splash.presesentation.SplashScreenRoot
 import com.crezent.finalyearproject.transaction.presentation.deposit.DepositScreenRoot
 import com.crezent.finalyearproject.transaction.presentation.new_credit_card.NewCreditCardScreenRoot
+import com.crezent.finalyearproject.transaction.presentation.payment.PayStackPaymentScreen
 import com.crezent.finalyearproject.transaction.presentation.payment_method.PaymentMethodRoute
+import com.crezent.finalyearproject.transaction.presentation.transaction_details.TransactionDetailsRoot
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 
 @Composable
 @Preview
-fun App() {
+fun App(
+) {
     MaterialTheme {
         val navHostController = rememberNavController()
 
@@ -141,15 +146,28 @@ fun App() {
                             screenNavigation = screenNavigation
                         )
                     }
-                    composable<Route.PaymentMethodRoute> {
-                        PaymentMethodRoute(
-                            screenNavigation = screenNavigation
+                    composable<Route.PaymentMethodRoute> { backStack ->
+
+                        val authorizationUrl =
+                            backStack.toRoute<Route.PaymentMethodRoute>().authorizationUrl
+                        PayStackPaymentScreen(
+                            screenNavigation = screenNavigation,
+                            authorizationUrl = authorizationUrl
                         )
+//                        PaymentMethodRoute(
+//                            screenNavigation = screenNavigation,
+//                        )
                     }
                     composable<Route.CreditCardRoute> {
                         NewCreditCardScreenRoot(
                             screenNavigation = screenNavigation
                         )
+                    }
+                    composable<Route.TransactionDetailRoute> {
+                        TransactionDetailsRoot(
+                            navigation = screenNavigation
+                        )
+
                     }
                 }
 

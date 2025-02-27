@@ -24,7 +24,6 @@ class JwtTokenService : TokenService {
         return token.sign(Algorithm.HMAC256(config.secret))
 
     }
-
     override fun verifyToken(
         audience :String,
         secret :String,

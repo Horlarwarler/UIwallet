@@ -19,7 +19,7 @@ kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_19)
         }
     }
 
@@ -60,6 +60,8 @@ kotlin {
             implementation(libs.ktor.client.android)
             implementation(libs.androidx.security.crypto)
             implementation(libs.koin.android)
+            implementation(libs.paystack)
+          //  implementation(lib)
             // implementation(libs.bcprov.jdk15on)
 
             implementation(libs.bcprov.jdk15to18)
@@ -69,8 +71,11 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
-            //implementation(compose.material)
+           // implementation(compose.material)
             implementation(compose.ui)
+         //   implementation ("androidx.compose.material3:material3:1.3.1")
+
+        //    implementation("androidx.compose.material3:material3:1.3.1") // or the latest version
             implementation(compose.material3)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.runtime.compose)
@@ -80,6 +85,7 @@ kotlin {
             implementation(libs.jetbrains.compose.navigation)
             //  implementation(libs.androidx.navigation.compose)
             implementation(projects.shared)
+
 
             //Ktor
             implementation(libs.ktor.serialization.kotlinx.json)
@@ -140,8 +146,18 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_19
+        targetCompatibility = JavaVersion.VERSION_19
+    }
+    buildFeatures{
+        compose = true
+        viewBinding = true
+
+    }
+    composeOptions {
+        composeOptions.kotlinCompilerExtensionVersion = "1.5.15"
+
+        // kotlinCompilerExtensionVersion  = 1
     }
 }
 

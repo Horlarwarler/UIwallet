@@ -6,4 +6,6 @@ sealed interface DepositScreenAction {
 
     data class EditInput(val numberInputType: NumberInputType) : DepositScreenAction
     data class EditCurrentIndex(val index: Int) : DepositScreenAction
+
+    data object OpenPaymentPage : DepositScreenAction
 }

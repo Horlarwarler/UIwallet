@@ -17,8 +17,10 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.url
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders.ContentEncoding
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.util.ContentEncoder
 import kotlinx.serialization.json.Json
 
 object HttpClientFactory {
@@ -26,6 +28,10 @@ object HttpClientFactory {
         return HttpClient(
             clientEngine
         ) {
+
+            install(ContentEncoding) {
+
+            }
             install(ContentNegotiation) {
                 json(
                     json = Json {
@@ -47,9 +53,9 @@ object HttpClientFactory {
 
             defaultRequest {
                 contentType(ContentType.Application.Json)
-               // url(ApiRoute.SAMSUNG_BASE_URL)
-               // url(ApiRoute.RENDER_URL)
-               url(ApiRoute.BASE_URL)
+                // url(ApiRoute.SAMSUNG_BASE_URL)
+                //url(ApiRoute.RENDER_URL)
+                url(ApiRoute.BASE_URL)
             }
 
 //            install(Auth) {

@@ -5,8 +5,13 @@ object Constant {
 
 object ApiRoute {
     const val BASE_URL = "http://172.20.10.12:8080/"
-    const val SAMSUNG_BASE_URL = "http://192.168.113.175:8080"
-    const val RENDER_URL = "https://wallet-server-9q2n.onrender.com"
+    // const val BASE_URL = "http://192.168.81.175:8080" // samsung
+    //172.20.10.12
+    // const val SAMSUNG_BASE_URL = "http://192.168.81.175:8080"
+
+    //192.168.113.175
+    // const val BASE_URL = "https://wallet-server-9q2n.onrender.com/" // RENDER
+
 
     const val LOGIN = "login"
     const val SIGNUP = "sign-up"
@@ -18,6 +23,8 @@ object ApiRoute {
     const val VERIFY_CVV = "verify-cvv"
     const val AUTHENTICATED_USER = "authenticated-user"
     const val CREATE_CARD = "create-card"
+    const val INITIATE_TRANSACTION = "initiate-transaction"
+    const val VERIFY_DEPOSIT = "verify-deposit"
 
 }
 

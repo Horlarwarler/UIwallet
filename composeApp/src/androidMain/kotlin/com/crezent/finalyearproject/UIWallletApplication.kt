@@ -1,6 +1,7 @@
 package com.crezent.finalyearproject
 
 import android.app.Application
+import com.crezent.finalyearproject.core.data.util.asActivity
 import com.crezent.finalyearproject.di.androidInitKoin
 import com.crezent.finalyearproject.di.initKoin
 import com.crezent.finalyearproject.platform.AndroidApplicationComponent
@@ -14,9 +15,10 @@ class UIWallletApplication : Application() {
         androidInitKoin(
             config = {
                 androidContext(this@UIWallletApplication)
-            }
+            },
+
         )
 
-       // application(AndroidApplicationComponent())
+        // application(AndroidApplicationComponent())
     }
 }

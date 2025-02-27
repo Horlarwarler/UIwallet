@@ -32,20 +32,26 @@ sealed class DatabaseErrorToType(
         itemNotFound = "email address or phone number not correct"
     )
 
-    data object  TokenError  : DatabaseErrorToType(
+    data object TokenError : DatabaseErrorToType(
         duplicateEntry = "Token already exist",
         insertingError = "Unable to add token ",
         itemNotFound = "Incorrect Otp"
     )
 
-    data object  ResetPasswordError  : DatabaseErrorToType(
+    data object ResetPasswordError : DatabaseErrorToType(
         itemNotFound = "This email is not associated with any account"
     )
 
-    data object  CardError  : DatabaseErrorToType(
+    data object CardError : DatabaseErrorToType(
         duplicateEntry = "This card is already associated with an account",
         insertingError = "Unable to add card ",
         itemNotFound = "No card was found "
+    )
+
+    data object TransactionError : DatabaseErrorToType(
+        duplicateEntry = "This transaction with this account",
+        insertingError = "Unable to add transaction ",
+        itemNotFound = "No transaction with this Id exist "
     )
 
 

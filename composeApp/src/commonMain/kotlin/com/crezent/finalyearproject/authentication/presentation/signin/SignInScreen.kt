@@ -90,7 +90,7 @@ fun SignInScreenRoot(
             is SignInEvent.AccountDisable -> Unit // Show dialog
             is SignInEvent.SignInError -> {
                 //   val message= event.error.
-                screenNavigation.navigateToHome()
+                //screenNavigation.navigateToHome()
                 scope.launch {
                     SnackBarController.sendEvent(
                         snackBarEvent = SnackBarEvent.ShowSnackBar(

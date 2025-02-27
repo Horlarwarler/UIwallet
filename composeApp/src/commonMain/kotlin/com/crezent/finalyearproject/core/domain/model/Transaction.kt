@@ -10,7 +10,7 @@ data class Transaction(
     val transactionAmount: Double,
     val transactionStatus: TransactionStatus,
     val transactionType: TransactionType,
-    val transactionDate: String,
-    val emailId: String,
+    val paidAt: String,
+    val createdDate: String,
     val fundingSource: FundingSource
 )

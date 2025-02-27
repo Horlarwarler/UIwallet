@@ -1,7 +1,8 @@
 package com.crezent.finalyearproject.transaction
 
 enum class TransactionStatus {
+    Initiated,
     Pending,
-    Error,
-    Successful
+    Failed,
+    Success
 }

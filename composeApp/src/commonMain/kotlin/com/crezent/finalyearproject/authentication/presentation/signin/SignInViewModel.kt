@@ -85,8 +85,6 @@ class SignInViewModel(
                     _channel.send(SignInEvent.SignInError(error = loginResult.error))
                     return@launch
                 }
-                val loggedInResult = loginResult as Result.Success
-
 //                val deactivationReason = loggedInResult.data.accountDeactivationReason
 //                val accountDisable = loggedInResult.data.accountDeactivationReason != null
 //

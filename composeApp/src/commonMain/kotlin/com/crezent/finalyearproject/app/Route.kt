@@ -42,6 +42,9 @@ sealed interface Route {
     data object DepositRoute : Route
 
     @Serializable
+    data object TransactionDetailRoute : Route
+
+    @Serializable
     data object ResetPassword : Route
 
     @Serializable
@@ -51,7 +54,7 @@ sealed interface Route {
     data object HomeRoute : Route
 
     @Serializable
-    data class PaymentMethodRoute(val amount: String) : Route
+    data class PaymentMethodRoute(val authorizationUrl: String, val reference: String) : Route
 
     @Serializable
     data object CreditCardRoute : Route

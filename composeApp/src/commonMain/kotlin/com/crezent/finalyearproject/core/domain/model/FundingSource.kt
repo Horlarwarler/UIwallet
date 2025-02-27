@@ -1,20 +1,25 @@
 package com.crezent.finalyearproject.core.domain.model
 
-import kotlinx.serialization.Serializable
-
-sealed class FundingSource(val name: String) {
+sealed class FundingSource(val channel: String) {
     data class BankTransfer(
         val accountName: String,
         val accountNumber: String,
-    ) : FundingSource(name = "Bank Transfer")
+    ) : FundingSource(channel = "Bank Transfer")
 
     data class CardPayment(
         val cardNumber: String,
-    ) : FundingSource(name = "Card Payment")
+    ) : FundingSource(channel = "Card Payment")
 
     data class UssdPayment(
-        val phoneNumber: String
+        val bank: String
     ) : FundingSource(
-        name = "Ussd Payment"
+        channel = "Ussd Payment"
     )
+    data class Bank(
+        val bank: String,
+        val lastFourDigit: String
+    ) :  FundingSource(
+        channel = "Bank"
+    )
+
 }

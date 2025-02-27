@@ -25,22 +25,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.crezent.finalyearproject.VERIFY_EMAIL_PURPOSE
 import com.crezent.finalyearproject.app.ScreenNavigation
-import com.crezent.finalyearproject.authentication.presentation.signin.SignInEvent
-import com.crezent.finalyearproject.core.domain.model.Card
 import com.crezent.finalyearproject.core.domain.util.Animations
 import com.crezent.finalyearproject.core.presentation.component.ActionButton
 import com.crezent.finalyearproject.core.presentation.component.CustomAppBar
 import com.crezent.finalyearproject.core.presentation.component.NumberInputDialog
 import com.crezent.finalyearproject.core.presentation.component.SectionHeader
 import com.crezent.finalyearproject.core.presentation.util.SnackBarController
-import com.crezent.finalyearproject.core.presentation.util.SnackBarEvent
 import com.crezent.finalyearproject.core.presentation.util.SnackBarEvent.*
 import com.crezent.finalyearproject.core.presentation.util.observeFlowAsEvent
 import com.crezent.finalyearproject.domain.util.toErrorMessage
-import com.crezent.finalyearproject.transaction.presentation.deposit.DepositScreenAction
-import com.crezent.finalyearproject.transaction.presentation.deposit.component.AmountInputField
 import com.crezent.finalyearproject.transaction.presentation.payment_method.component.CardMethod
 import com.crezent.finalyearproject.transaction.presentation.payment_method.component.NewPayment
 import com.crezent.finalyearproject.transaction.presentation.payment_method.util.PaymentMethod
@@ -51,8 +45,6 @@ import finalyearproject.composeapp.generated.resources.Res
 import finalyearproject.composeapp.generated.resources.bank_transfer
 import finalyearproject.composeapp.generated.resources.`continue`
 import finalyearproject.composeapp.generated.resources.credit_debit
-import finalyearproject.composeapp.generated.resources.deposit
-import finalyearproject.composeapp.generated.resources.next
 import finalyearproject.composeapp.generated.resources.payment_from_code
 import finalyearproject.composeapp.generated.resources.payment_methods
 import finalyearproject.composeapp.generated.resources.send
@@ -68,10 +60,12 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 fun PaymentMethodRoute(
-    screenNavigation: ScreenNavigation
+    screenNavigation: ScreenNavigation,
 ) {
     val viewModel: PaymentScreenViewModel = koinViewModel()
     val state = viewModel.paymentMethodState.collectAsStateWithLifecycle().value
+
+
 
     PaymentMethodScreen(
         navigateBack = screenNavigation.navigateBack,
@@ -79,6 +73,7 @@ fun PaymentMethodRoute(
         onAction = viewModel::handlePaymentScreenAction,
         navigateToAddNewCard = screenNavigation.navigateToCreditCardRoute
     )
+
 
     val scope = rememberCoroutineScope()
     var loadingAnimationJson by remember {
@@ -102,6 +97,11 @@ fun PaymentMethodRoute(
                         )
 
                     }
+                }
+
+                is PaymentMethodEvent.LaunchPayment -> {
+                   // paymentStackPayment.initiatePaymentScreen()
+                   // paymentStackPayment.makePayment(event.reference)
                 }
             }
         }
@@ -267,6 +267,7 @@ fun PaymentMethodScreen(
             isVisible = numberInputDialogVisible,
             onClick = {
                 onAction(PaymentScreenAction.OnCvvEnter(it))
+
                 //action(DepositScreenAction.EditInput(it))
             }
 
@@ -287,6 +288,7 @@ fun PaymentMethodScreen(
                 isEnable = isEnable,
                 shouldEnableClick = true,
                 onClick = {
+                    onAction(PaymentScreenAction.InitiatePayment)
                     //  onForgotPasswordAction(ForgotPasswordAction.SubmitOtp)
                 }
             )

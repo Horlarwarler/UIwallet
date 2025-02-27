@@ -1,13 +1,18 @@
 package com.crezent.finalyearproject.transaction.presentation.payment_method
 
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crezent.finalyearproject.core.domain.model.Card
+import com.crezent.finalyearproject.core.domain.util.ApiRoute
 import com.crezent.finalyearproject.core.presentation.SharedData
 import com.crezent.finalyearproject.core.presentation.component.NumberInputType
+import com.crezent.finalyearproject.data.dto.InitiateTransactionBody
 import com.crezent.finalyearproject.domain.util.Result
 import com.crezent.finalyearproject.domain.util.toErrorMessage
+import com.crezent.finalyearproject.transaction.FundingSourceDto.UssdPayment
+import com.crezent.finalyearproject.transaction.TransactionDto
+import com.crezent.finalyearproject.transaction.TransactionStatus
+import com.crezent.finalyearproject.transaction.TransactionType
 import com.crezent.finalyearproject.transaction.domain.TransactionRepo
 import com.crezent.finalyearproject.transaction.presentation.payment_method.util.PaymentMethod
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +20,6 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -24,7 +28,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class PaymentScreenViewModel(
-    private val transactionRepo: TransactionRepo
+    private val transactionRepo: TransactionRepo,
+    //private val paystack: PaymentScreenInterface
 ) : ViewModel() {
 
     private val _paymentEventChannel = Channel<PaymentMethodEvent>()
@@ -52,6 +57,8 @@ class PaymentScreenViewModel(
             is PaymentScreenAction.OnSelectCurrentCard -> onSelectCurrentCard(action.card)
             is PaymentScreenAction.SelectPaymentMethod -> selectPaymentMethod(action.paymentMethod)
             PaymentScreenAction.VerifyCvv -> verifyCvv()
+
+            PaymentScreenAction.InitiatePayment -> initiatePayment()
         }
     }
 
@@ -152,6 +159,35 @@ class PaymentScreenViewModel(
 
                     )
             }
+        }
+
+    }
+
+    private fun initiatePayment() {
+        viewModelScope.launch {
+
+//            val result = transactionRepo.initiatePayment(
+//                initiateTransactionBody = InitiateTransactionBody(
+//                    amount = "1000",
+//                    email =paymentMethodState.value.,
+//                    callBackUrl = "${ApiRoute.BASE_URL}/callback?email=$loggedInUserMail"
+//                )
+//            )
+//            if (result is Result.Error) {
+//                val message = result.error.toErrorMessage()
+//                println("UNABLE TO INITIATE PAYMENT $message")
+//                return@launch
+//            }
+          //  val reference = (result as Result.Success).data
+
+          //  _paymentEventChannel.send(PaymentMethodEvent.LaunchPayment(reference = reference))
+
+//            withContext(Dispatchers.Main) {
+//
+//                println("Success code is $message")
+//                paystack.initiatePaymentScreen()
+//                paystack.makePayment("xkt2b6gk0vzerfa")
+//            }
         }
 
     }

@@ -1,6 +1,7 @@
 package com.crezent.finalyearproject.core.data.network
 
 import com.crezent.finalyearproject.RSA_ALIAS
+import com.crezent.finalyearproject.core.data.mapper.toTransaction
 import com.crezent.finalyearproject.core.data.security.encryption.CryptographicOperation
 import com.crezent.finalyearproject.core.data.security.encryption.KeyPairGenerator
 import com.crezent.finalyearproject.core.domain.BaseAppRepo
@@ -12,7 +13,6 @@ import com.crezent.finalyearproject.core.domain.model.Wallet
 import com.crezent.finalyearproject.core.domain.preference.EncryptedSharePreference
 import com.crezent.finalyearproject.core.domain.preference.SharedPreference
 import com.crezent.finalyearproject.core.presentation.SharedData
-import com.crezent.finalyearproject.data.dto.CardDto
 import com.crezent.finalyearproject.data.dto.CardResponse
 import com.crezent.finalyearproject.data.dto.LoggedInUser
 import com.crezent.finalyearproject.data.dto.PublicKey
@@ -21,11 +21,11 @@ import com.crezent.finalyearproject.domain.util.RemoteError
 import com.crezent.finalyearproject.domain.util.Result
 import com.crezent.finalyearproject.domain.util.map
 import com.crezent.finalyearproject.domain.util.onSuccess
-import com.crezent.finalyearproject.transaction.BankTransfer
-import com.crezent.finalyearproject.transaction.CardPayment
 import com.crezent.finalyearproject.transaction.FundingSourceDto
+import com.crezent.finalyearproject.transaction.FundingSourceDto.BankTransfer
+import com.crezent.finalyearproject.transaction.FundingSourceDto.CardPayment
+import com.crezent.finalyearproject.transaction.FundingSourceDto.UssdPayment
 import com.crezent.finalyearproject.transaction.TransactionDto
-import com.crezent.finalyearproject.transaction.UssdPayment
 import kotlinx.serialization.json.Json
 import kotlin.collections.map
 
@@ -72,7 +72,7 @@ class BaseApiRepoImpl(
 
         try {
             return baseApi.getAuthenticatedUser(
-                bearerToken = encryptedPref.getAuthToken!!,
+                bearerToken = encryptedPref.getAuthToken ?: "",
                 rsaPublicKey = clientRsaKey
             )
                 .map {
@@ -160,37 +160,6 @@ private fun WalletDto.toWallet(): Wallet {
             it.toTransaction()
         }
     )
-}
-
-private fun TransactionDto.toTransaction(): Transaction {
-    return Transaction(
-        transactionId = transactionId,
-        transactionTitle = transactionTitle,
-        transactionDescription = transactionDescription,
-        transactionAmount = transactionAmount,
-        transactionStatus = transactionStatus,
-        transactionType = transactionType,
-        transactionDate = transactionDate,
-        emailId = emailId,
-        fundingSource = fundingSourceDto.toFunding()
-    )
-}
-
-private fun FundingSourceDto.toFunding(): FundingSource {
-    return when (this) {
-        is BankTransfer -> FundingSource.BankTransfer(
-            accountName = accountName,
-            accountNumber = accountNumber
-        )
-
-        is CardPayment -> FundingSource.CardPayment(
-            cardNumber = cardNumber
-        )
-
-        is UssdPayment -> FundingSource.UssdPayment(
-            phoneNumber = phoneNumber
-        )
-    }
 }
 
 private fun CardResponse.toCard(): Card {

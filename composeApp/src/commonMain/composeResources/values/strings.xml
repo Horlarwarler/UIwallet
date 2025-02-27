@@ -66,6 +66,26 @@
     <string name= "card_place_holder">1234 5678 </string>
     <string name= "expiration_place_holder">Expired Date </string>
     <string name= "cvv_place_holder">Cvv Code </string>
+    <string name="transaction_successful">Transaction Successful !</string>
+    <string name="transaction_unsuccessful">Oops! Transaction Error</string>
+    <string name="transaction_pending">This transaction Pending</string>
+    <string name="deposit_transaction_successful">Your Deposit was successful, you should see it in your wallet soon</string>
+    <string name="deposit_transaction_unsuccessful">Your deposit failed, if you are charged,  kindly contact your bank</string>
+    <string name="deposit_transaction_pending">Your deposit is still pending, we will let you know as soon as possible</string>
+    <string name="amount">Amount</string>
+    <string name="payment_status">Payment Status</string>
+    <string name="funding_source">Funding Source</string>
+    <string name="payment_time">Payment Time</string>
+    <string name="transaction_id">Transaction Id</string>
+    <string name="email">Email</string>
+    <string name="new_payment">Make New Payment</string>
+    <string name="retry_payment">Retry Payment</string>
+    <string name="bank">Bank</string>
+    <string name="account_name">Account Name</string>
+    <string name="account_number">Account Number</string>
+    <string name="payer_name">Payer Name</string>
+
+
 
 
 </resources>

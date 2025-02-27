@@ -3,18 +3,24 @@ package com.crezent.finalyearproject.transaction.data
 import com.crezent.finalyearproject.EC_ALIAS
 import com.crezent.finalyearproject.RSA_ALIAS
 import com.crezent.finalyearproject.authentication.data.network.AuthenticationRemote
+import com.crezent.finalyearproject.core.data.mapper.toTransaction
 import com.crezent.finalyearproject.core.data.security.encryption.CryptographicOperation
 import com.crezent.finalyearproject.core.data.security.encryption.KeyPairGenerator
 import com.crezent.finalyearproject.core.domain.BaseAppRepo
 import com.crezent.finalyearproject.core.domain.model.Card
+import com.crezent.finalyearproject.core.domain.model.Transaction
 import com.crezent.finalyearproject.core.domain.preference.EncryptedSharePreference
 import com.crezent.finalyearproject.core.domain.preference.SharedPreference
 import com.crezent.finalyearproject.data.dto.CardDto
 import com.crezent.finalyearproject.data.dto.CvvVerification
+import com.crezent.finalyearproject.data.dto.InitiateTransactionBody
 import com.crezent.finalyearproject.domain.util.RemoteError
 import com.crezent.finalyearproject.domain.util.Result
 import com.crezent.finalyearproject.domain.util.map
+import com.crezent.finalyearproject.domain.util.onSuccess
+import com.crezent.finalyearproject.transaction.TransactionDto
 import com.crezent.finalyearproject.transaction.domain.TransactionRepo
+import com.crezent.finalyearproject.transaction.domain.model.InitiateTransactionResponse
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -118,6 +124,51 @@ class TransactionRepoImpl(
             e.printStackTrace()
             return Result.Error(RemoteError.ServerError)
         }
+    }
+
+    override suspend fun verifyPayment(
+        emailAddress: String,
+        reference: String
+    ): Result<Transaction, RemoteError> {
+        println("Payment REPO reference is $reference , logged in email is $emailAddress")
+
+        return transactionApi
+            .verifyTransaction(
+                reference = reference,
+                emailAddress = emailAddress,
+                bearerToken = encryptedSharePreference.getAuthToken!!
+            )
+            .onSuccess {
+                val signature = it.data!!.signature
+                val data = it.data!!.data
+                val ecKey = it.data!!.ecKey
+                val isValid = cryptographicOperation.verifySignature(
+                    signature = signature,
+                    dataToVerify = data,
+                    publicKey = ecKey
+                )
+                if (!isValid) {
+                    return Result.Error(
+                        error = RemoteError.InvalidSignature
+                    )
+                }
+
+            }
+
+            .map {
+                val data = it.data!!.data
+                Json.decodeFromString<TransactionDto>(data).toTransaction()
+
+            }
+
+    }
+
+    override suspend fun initiatePayment(initiateTransactionBody: InitiateTransactionBody): Result<InitiateTransactionResponse, RemoteError> {
+
+        return transactionApi.initiatePayment(
+            initiateTransactionBody = initiateTransactionBody,
+            bearerToken = encryptedSharePreference.getAuthToken!!
+        )
     }
 
 }

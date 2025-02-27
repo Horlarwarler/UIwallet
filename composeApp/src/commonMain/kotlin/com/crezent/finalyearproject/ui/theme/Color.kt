@@ -16,7 +16,8 @@ val lightBlack = Color(0xFF393E46)
 
 val lightGreen = Color(0xFF00ADB5).copy(alpha = 0.5f)
 
-val errorColor = Color(0xFFD91C20)
+val errorColor = Color(0xFFE44143)
+val failedColor = Color(0xFFFCD0DC)
 
 val otpBackground = Color(0xFFF3F3F3)
 val limeColor = Color(0xffF5F2E2)

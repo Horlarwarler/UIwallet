@@ -16,4 +16,13 @@ data class EncryptedModel(
     val aesKey: String,
 )
 
+@Serializable
+data class SignatureModel(
+    val signature: String,
+    val data: String,
+    @SerialName("ec_key") // For verification information send
+    val ecKey: String,
+
+    )
+
 

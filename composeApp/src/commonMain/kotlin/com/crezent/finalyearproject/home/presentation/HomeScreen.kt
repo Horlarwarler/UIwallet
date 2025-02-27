@@ -32,6 +32,7 @@ import com.crezent.finalyearproject.app.ScreenNavigation
 import com.crezent.finalyearproject.authentication.presentation.signin.SignInEvent
 import com.crezent.finalyearproject.core.domain.model.FundingSource
 import com.crezent.finalyearproject.core.domain.model.Transaction
+import com.crezent.finalyearproject.core.presentation.SharedData
 import com.crezent.finalyearproject.core.presentation.component.TopBarLoadingIndicator
 import com.crezent.finalyearproject.core.presentation.util.SnackBarController
 import com.crezent.finalyearproject.core.presentation.util.SnackBarEvent
@@ -87,7 +88,11 @@ fun HomeScreenRoot(
     HomeScreen(
         state = state,
         onProfileClick = navigation.navigateToSetting,
-        navigateToDeposit = navigation.navigateToTransactionRoute
+        navigateToDeposit = navigation.navigateToTransactionRoute,
+        navigateToTransaction = {
+            SharedData.editCurrentTransaction(it)
+            navigation.navigateToDetailTransactionRoute()
+        }
     )
 
 }
@@ -97,7 +102,8 @@ fun HomeScreen(
     state: HomeScreenState = HomeScreenState(),
     onProfileClick: () -> Unit,
     navigateToDeposit: () -> Unit = {},
-    navigateToPayment: () -> Unit = {}
+    navigateToPayment: () -> Unit = {},
+    navigateToTransaction: (Transaction) -> Unit
 ) {
     Column(
         modifier = Modifier.background(background)
@@ -153,7 +159,7 @@ fun HomeScreen(
                 TransactionCard(
                     transaction = it,
                     onClick = {
-
+                        navigateToTransaction(it)
                     }
                 )
             }

@@ -8,7 +8,3 @@ interface KeyPairGenerator {
     fun getClientKeyPair(alias: String): String
 }
 
-data class KeyPair(
-    val privateKey: String,
-    val publicKey: String
-)

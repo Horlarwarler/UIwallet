@@ -17,11 +17,8 @@ import com.crezent.finalyearproject.domain.util.map
 import com.crezent.finalyearproject.domain.util.onError
 import com.crezent.finalyearproject.domain.util.onSuccess
 import com.crezent.finalyearproject.domain.util.toErrorMessage
-import com.crezent.finalyearproject.transaction.BankTransfer
-import com.crezent.finalyearproject.transaction.CardPayment
 import com.crezent.finalyearproject.transaction.FundingSourceDto
 import com.crezent.finalyearproject.transaction.TransactionDto
-import com.crezent.finalyearproject.transaction.UssdPayment
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
@@ -37,10 +34,8 @@ class KtorBaseApi(
             client.get(ApiRoute.API_KEY)
         }
             .onSuccess {
-                println("Successfull login ${it.data}")
             }
             .onError {
-                println("Error happened ${it.toErrorMessage()} ")
             }
     }
 

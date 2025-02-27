@@ -43,7 +43,6 @@ class HomeScreenViewModel(
 
         )
 
-
     private fun getAuthenticatedUser() {
         _homeScreenState.update {
             it.copy(
@@ -54,9 +53,6 @@ class HomeScreenViewModel(
 
             val request = baseAppRepo.getAndCacheAuthenticatedUser()
             withContext(Dispatchers.Main) {
-//                _homeScreenState.update {
-//                 //   it.copy(isLoading = false)
-//                }
                 println("RESULT IS $request")
                 if (request is Result.Error) {
                     _homeScreenState.update {
@@ -66,37 +62,10 @@ class HomeScreenViewModel(
                 }
 
                 val user = (request as Result.Success).data
-                val items = (1..10).map {
-                    Transaction(
-                        transactionDescription = "Transaction description $it",
-                        transactionId = "12",
-                        transactionTitle = "Bank deposit",
-                        transactionAmount = (100f * it).toDouble(),
-                        transactionStatus = TransactionStatus.Successful,
-                        transactionDate = "12-12-2024",
-                        transactionType = if (it % 2 == 0) TransactionType.Debit else TransactionType.Credit,
-                        emailId = "mikail",
-                        fundingSource = FundingSource.UssdPayment("08154234565"),
-                    )
-                }
-
-                val tempUserWallet = user.wallet
+//
                 _homeScreenState.value = homeScreenState.value.copy(
-                    user = user.copy(
-                        wallet = tempUserWallet!!.copy(
-                            transactions = items
-                        )
-                    )
+                    user = user
                 )
-//                _homeScreenState.update {
-//                    it.copy(
-//                        user = user.copy(
-//                            wallet = it.user?.wallet?.copy(
-//                                transactions = items
-//                            )
-//                        ),
-//                    )
-//                }
 
 
             }

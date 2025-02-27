@@ -34,8 +34,6 @@ class IosKeyPairGenerator : KeyPairGenerator{
         let attributes: [String: Any] =
             [kSecAttrKeyType as String:            kSecAttrKeyTypeEC,
              kSecAttrKeySizeInBits as String:      256,
-             //kSecAttrCanEncrypt as String: true,
-            // kSecAttrCanDecrypt as String:true,
              kSecAttrCanVerify as String: true,
              kSecAttrCanSign as String: true,
              kSecPrivateKeyAttrs as String:

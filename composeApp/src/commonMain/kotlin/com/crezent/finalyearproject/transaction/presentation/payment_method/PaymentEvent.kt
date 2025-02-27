@@ -5,4 +5,6 @@ import com.crezent.finalyearproject.domain.util.RemoteError
 sealed interface PaymentMethodEvent {
 
     data class CvvVerificationFailure(val error: RemoteError) : PaymentMethodEvent
+
+    data class LaunchPayment(val reference: String) : PaymentMethodEvent
 }

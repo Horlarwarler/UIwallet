@@ -5,11 +5,17 @@ import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 
 fun androidInitKoin(
-    config:KoinAppDeclaration
+    config: KoinAppDeclaration,
+    //activity: Activity
 ) {
 
     initKoin(
         additionalModules = listOf(module {
+//            single<PaymentScreenInterface> {
+//                AndroidPayStackPaymentInterface(
+////                    activity = activity
+//                )
+//            }
             single {
                 AndroidApplicationComponent()
             }

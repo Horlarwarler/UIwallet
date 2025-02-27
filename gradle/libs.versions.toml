@@ -3,7 +3,7 @@ agp = "8.7.3"
 android-compileSdk = "35"
 android-minSdk = "24"
 android-targetSdk = "34"
-androidx-activityCompose = "1.9.3"
+androidx-activityCompose = "1.10.0"
 androidx-appcompat = "1.7.0"
 androidx-constraintlayout = "2.2.0"
 androidx-core-ktx = "1.15.0"
@@ -12,17 +12,19 @@ androidx-lifecycle = "2.8.4"
 androidx-material = "1.12.0"
 androidx-test-junit = "1.2.1"
 compose-multiplatform = "1.7.0"
+kotlin-version = "2.1.0"
+
 junit = "4.13.2"
 koinAndroid = "4.1.0-Beta1"
-ktor-version = "3.0.2"
+ktor-version = "3.0.3"
 jvm-test-version = "3.0.0-beta-2"
 koin-version = "4.0.1"
-kotlin-version = "2.1.0"
 logback-version = "1.4.14"
 mongo-version = "4.10.2"
 codec-version = "1.17.1"
 jbcrypt-version = "0.4"
 bouncy-castle_version = "1.70"
+paystack = "0.0.9"
 connectivity-status-version = "1.2.0"
 russhwolf = "1.2.0"
 k-vault-version = "1.12.0"
@@ -123,6 +125,9 @@ bcprov-jdk15to18 = { module = "org.bouncycastle:bcprov-jdk15to18", version.ref =
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "russhwolf" }
 k-vault = { module = "com.liftric:kvault", version.ref = "k-vault-version" }
 kottie = { module = "io.github.ismai117:kottie", version.ref = "kottie-version" }
+
+#Paystack
+paystack = { module = "com.paystack.android:paystack-ui", version.ref= "paystack"}
 
 
 

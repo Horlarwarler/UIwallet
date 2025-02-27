@@ -6,11 +6,15 @@ const val SERVER_PORT = 8080
 //const val TRANSFORMATION = "ECDSA"
 
 const val ANDROID_TRANSFORMATION = "EC"
+
 //const val RSA_TRANSFORMATION = "RSA/ECB/OAEPPadding"
 const val RSA_TRANSFORMATION = "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"
 
 const val AES_TRANSFORMATION = "AES/GCM/NoPadding"
 const val CARD_AES_TRANSFORMATION = "AES/CBC/PKCS5Padding"
+const val PAYSTACK_PUBLIC_KEY = "pk_test_370e8d626fed1819c3a137e0476d6dbaeb971fb7"
+
+
 //
 
 

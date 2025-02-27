@@ -91,8 +91,23 @@ class ScreenNavigation(val navController: NavController) {
         navController.navigate(Route.CreditCardRoute)
     }
 
-    val navigateToPaymentMethod: (String) -> Unit = {
-        navController.navigate(Route.PaymentMethodRoute(it))
+    val navigateToDepositRoute: () -> Unit = {
+        navController.navigate(Route.DepositRoute)
+    }
+
+    val navigateToDetailTransactionRoute: () -> Unit = {
+        navController.navigate(Route.TransactionDetailRoute) {
+            popUpTo(Route.HomeRoute)
+        }
+    }
+
+    val navigateToPaymentMethod: (String, String) -> Unit = { authorizationUrl, referenceCode ->
+        navController.navigate(
+            Route.PaymentMethodRoute(
+                authorizationUrl = authorizationUrl,
+                reference = referenceCode
+            )
+        )
     }
 
 }

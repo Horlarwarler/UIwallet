@@ -1,5 +1,6 @@
 package com.crezent.finalyearproject.plugins
 
+import com.crezent.finalyearproject.data.repo.PayStackRepository
 import com.crezent.finalyearproject.data.repo.PaymentRepository
 import com.crezent.finalyearproject.data.repo.UIWalletRepository
 import com.crezent.finalyearproject.routes.*
@@ -35,6 +36,7 @@ fun Application.configureRoute(
     val senderMail = "ramadan@trial-351ndgwxmkd4zqx8.mlsender.net"
     val mailerToken = System.getenv("mailer_token")!!
     val mailerBaseUrl = "https://api.mailersend.com/v1/email"
+    val payStackSecret = System.getenv("paystack_test_key")
     // val audience = environment.config.property("jwt.audience")
 
 
@@ -48,6 +50,8 @@ fun Application.configureRoute(
     val httpClient by inject<HttpClient>()
 
     val jwtTokenService = JwtTokenService()
+
+    val payStackRepository = PayStackRepository(httpClient)
 
 
     routing {
@@ -78,11 +82,11 @@ fun Application.configureRoute(
             baseUrl = mailerBaseUrl
         )
         getUser(
-            serverPrivateKeyString = "serverPrivateKey",
+            serverPrivateKeyString = ecPrivateKey,
             signingService = SigningService,
             encryptService = encryptService,
             uiWalletRepository = uiWalletRepository,
-            serverPublicKeyString = "serverPublicKey"
+            serverPublicKeyString = ecPublicKey
         )
         verifyEmail(
             uiWalletRepository = uiWalletRepository,
@@ -147,6 +151,25 @@ fun Application.configureRoute(
             serverEcPublicKey = ecPublicKey,
             serverRsaPublicKey = rsaPublicKey,
             key = key
+        )
+
+        initiateDeposit(
+            payStackRepository = payStackRepository,
+            payStackSecretKey = payStackSecret,
+            paymentRepository = paymentRepository,
+        )
+
+        payStackPaymentSuccessCallBack()
+
+        payStackPaymentCancelCallBack()
+
+        verifyDeposit(
+            payStackRepository = payStackRepository,
+            payStackSecretKey = payStackSecret,
+            paymentRepository = paymentRepository,
+            signingService = SigningService,
+            serverPrivateKeyString = ecPrivateKey,
+            serverPublicKeyString = ecPublicKey,
         )
 
     }

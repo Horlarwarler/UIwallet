@@ -23,11 +23,9 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 
 class ECBEncryptService : EncryptService {
-
     init {
         Security.addProvider(BouncyCastleProvider())
     }
-
     override fun decryptData(
         aesEncryptedString: String,
         rsaPrivateKeyString: String,
@@ -56,25 +54,17 @@ class ECBEncryptService : EncryptService {
         }
     }
 
-
     override fun encryptData(value: String, clientRsapublicKey: String): EncryptionKeyValue? {
         return try {
 
-
             val rsaPublicKeyBytes = org.bouncycastle.util.encoders.Base64.decode(clientRsapublicKey)
-
-
-            //al testString = org.bouncycastle.util.encoders.Base64.toBase64String(aesPublicKey.encoded)
-            //println("Test $testString")
             val rsaPublicKeySpec = X509EncodedKeySpec(rsaPublicKeyBytes)
-            println("Generate public key spec")
 
             val keyFactory = KeyFactory.getInstance("RSA")
 
 
             val rsaPublicKey = keyFactory.generatePublic(rsaPublicKeySpec) /// THE ERROR OCCURS HERE
             //THIS IS THE ERROR MESSAGE java.security.InvalidKeyException: Missing key encoding
-            println("Generate public key")
 
             //  val cipher = Cipher.getInstance(TRANSFORMATION)
             val cipher = Cipher.getInstance(RSA_TRANSFORMATION)
@@ -118,7 +108,6 @@ class ECBEncryptService : EncryptService {
         val keyPair = keyPairGenerator.generateKey()
         return keyPair
     }
-
 
     private fun decodeWithRsaPublicKey(
         rsaPrivateKeyString: String,
@@ -236,6 +225,8 @@ class ECBEncryptService : EncryptService {
         return Pair(encryptedData, encodedIV)
 
     }
+
+
 
 
 }

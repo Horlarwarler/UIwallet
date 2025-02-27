@@ -47,38 +47,20 @@ class AndroidCryptographicOperation : CryptographicOperation {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun encryptData(serverPublicKey: String, data: String): EncryptionKeyValue {
-
-
         val publicKey = decodePublicKey(serverPublicKey, KeyProperties.KEY_ALGORITHM_RSA)
-
-
         val aesPublicKey = generateAesPublicKey()
-
         val aesCipher = Cipher.getInstance(AES_TRANSFORMATION)
         aesCipher.init(Cipher.ENCRYPT_MODE, aesPublicKey)
-
         val iv = aesCipher.iv
         val aesEncryptedValue = aesCipher.doFinal(data.toByteArray())
         println(aesEncryptedValue)
         val aesEncrypted =
             Base64.getEncoder().encodeToString(aesEncryptedValue) + ":" + Base64.getEncoder()
                 .encodeToString(iv)
-
-        // println("AES $aesEncrypted")
-
         val cipher = Cipher.getInstance(RSA_TRANSFORMATION)
-
         cipher.init(Cipher.PUBLIC_KEY, publicKey)
-        println("Cipher initialized successfully")
-
-
         val encrypted = cipher.doFinal(aesPublicKey.encoded)
-
-        println("Encryption completed. Encrypted length: ${encrypted.size} and ${aesPublicKey.encoded.size}")
-
         val rsaEncryptedKey = Base64.getEncoder().encodeToString(encrypted)
-        println("Base64 encoding completed. Final length: $rsaEncryptedKey}")
-
         return EncryptionKeyValue(
             aesEncryptedString = aesEncrypted,
             rsaEncryptedKey = rsaEncryptedKey
@@ -95,10 +77,7 @@ class AndroidCryptographicOperation : CryptographicOperation {
         cipher.init(Cipher.DECRYPT_MODE, privateKey)
         val decodedAesByte = org.bouncycastle.util.encoders.Base64.decode(encryptedAesKey)
         val decryptedAesKey = cipher.doFinal(decodedAesByte)
-        val originalKey: SecretKey =
-            SecretKeySpec(decryptedAesKey, "AES")
-
-
+        val originalKey: SecretKey = SecretKeySpec(decryptedAesKey, "AES")
 
         val parts = encryptedData.split(":")
         val mainPart = org.bouncycastle.util.encoders.Base64.decode(parts[0])

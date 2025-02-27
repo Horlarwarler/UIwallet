@@ -1,15 +1,36 @@
 package com.crezent.finalyearproject.transaction.presentation.deposit
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.crezent.finalyearproject.core.domain.util.ApiRoute
+import com.crezent.finalyearproject.core.presentation.SharedData
 import com.crezent.finalyearproject.core.presentation.component.NumberInputType
+import com.crezent.finalyearproject.data.dto.InitiateMetaData
+import com.crezent.finalyearproject.data.dto.InitiateTransactionBody
+import com.crezent.finalyearproject.domain.util.Result
+import com.crezent.finalyearproject.domain.util.toErrorMessage
+import com.crezent.finalyearproject.transaction.FundingSourceDto.UssdPayment
+import com.crezent.finalyearproject.transaction.TransactionDto
+import com.crezent.finalyearproject.transaction.TransactionStatus
+import com.crezent.finalyearproject.transaction.TransactionType
+import com.crezent.finalyearproject.transaction.domain.TransactionRepo
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class DepositScreenViewmodel : ViewModel() {
+class DepositScreenViewmodel(
+    private val transactionRepo: TransactionRepo,
+) : ViewModel() {
     private val _depositScreenState = MutableStateFlow(DepositScreenState())
 
     val depositScreenState = _depositScreenState.asStateFlow()
+
+    private val _depositEventChannel = Channel<DepositScreenEvent>()
+    val depositEventChannel = _depositEventChannel.receiveAsFlow()
+    val loggedInUserMail = SharedData.loggedInUser.value?.emailAddress ?: "newuser@gmail.com"
 
 
     fun handleScreenAction(action: DepositScreenAction) {
@@ -19,12 +40,13 @@ class DepositScreenViewmodel : ViewModel() {
             }
 
             is DepositScreenAction.EditCurrentIndex -> editCurrentIndex(action.index)
+            DepositScreenAction.OpenPaymentPage -> openPaymentPage()
         }
     }
 
     private fun editScreenAction(input: NumberInputType) {
         val state = depositScreenState.value
-        val existingInput = state.depositAmount.orEmpty()
+        val existingInput = state.amount.orEmpty()
         val currentIndex = state.currentIndex
 
         val newInput: String = when (input) {
@@ -39,7 +61,7 @@ class DepositScreenViewmodel : ViewModel() {
 
         _depositScreenState.update {
             it.copy(
-                depositAmount = newInput,
+                amount = newInput,
                 currentIndex = currentIndex + when (input) {
                     NumberInputType.Dot, is NumberInputType.Number -> 1
                     NumberInputType.BackSpace -> if (currentIndex > 0) -1 else 0
@@ -85,6 +107,43 @@ class DepositScreenViewmodel : ViewModel() {
         }
     }
 
+    private fun openPaymentPage() {
+        val amount = depositScreenState.value.amount ?: return
+        _depositScreenState.value = depositScreenState.value.copy(isLoading = true)
+        viewModelScope.launch {
+            val result = transactionRepo.initiatePayment(
+                initiateTransactionBody = InitiateTransactionBody(
+                    amount = "${amount}00",
+                    email = loggedInUserMail,
+                    callBackUrl = "${ApiRoute.BASE_URL}callback",
+                    metaData = InitiateMetaData(cancelAction = "${ApiRoute.BASE_URL}cancel-payment")
+                )
+            )
+
+            if (result is Result.Error) {
+                val message = result.error.toErrorMessage()
+                _depositScreenState.value = depositScreenState.value.copy(isLoading = false)
+                println("UNABLE TO INITIATE PAYMENT $message")
+                return@launch
+            }
+            val data = (result as Result.Success).data
+            _depositScreenState.value = depositScreenState.value.copy(isLoading = false)
+            _depositEventChannel.send(
+                DepositScreenEvent.NavigateToPayStack(
+                    authorizationUrl = data.authorizationUrl,
+                    reference = data.referenceCode
+                )
+            )
+
+//            withContext(Dispatchers.Main) {
+//
+//                println("Success code is $message")
+//                paystack.initiatePaymentScreen()
+//                paystack.makePayment("xkt2b6gk0vzerfa")
+//            }
+        }
+
+    }
 
     private fun editCurrentIndex(
         index: Int
